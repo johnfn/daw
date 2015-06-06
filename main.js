@@ -5,6 +5,8 @@ var __extends = this.__extends || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
+// TODO
+//   * Separate out grid from MainView and make that selectable, too.
 var C = (function () {
     function C() {
     }
@@ -168,6 +170,57 @@ var NoteViewModel = (function (_super) {
         enumerable: true,
         configurable: true
     });
+    //
+    // ISelectableThing
+    //
+    // TODO: Decompose out a "find note w/ (x, y)"
+    // TODO: should consider note start and end positions
+    NoteViewModel.prototype.hasSomethingToSelectAt = function (x, y) {
+        var normalizedX = Math.floor(x / this.noteWidth);
+        var normalizedY = Math.floor(y / this.noteHeight);
+        for (var i = 0; i < this.notes.length; i++) {
+            var note = this.notes[i];
+            if (note.x == normalizedX && note.y == normalizedY) {
+                return true;
+            }
+        }
+        return false;
+    };
+    NoteViewModel.prototype.selectAt = function (x, y) {
+        var normalizedX = Math.floor(x / this.noteWidth);
+        var normalizedY = Math.floor(y / this.noteHeight);
+        // Deselect any old selected note (TODO could be optimized)
+        for (var i = 0; i < this.notes.length; i++) {
+            var note = this.notes[i];
+            if (note.uiState.selected) {
+                note.uiState.selected = false;
+            }
+        }
+        // Select new note
+        for (var i = 0; i < this.notes.length; i++) {
+            var note = this.notes[i];
+            if (note.x == normalizedX && note.y == normalizedY) {
+                note.uiState.selected = true;
+                break;
+            }
+        }
+    };
+    NoteViewModel.prototype.deselect = function () {
+        console.warn("Stub");
+    };
+    /**
+      How high the selectable thing is in the hierarchy. Bigger numbers are on top of smaller numbers.
+    */
+    NoteViewModel.prototype.depth = function () {
+        return 0;
+    };
+    // NOTE this is wrong
+    /**
+      Register this as a selectable thing. Necessary if you want it to actually be selected...
+    */
+    NoteViewModel.prototype.register = function () {
+        console.warn("stub");
+    };
     return NoteViewModel;
 })(Base);
 var NoteView = (function (_super) {
@@ -205,64 +258,9 @@ var NoteView = (function (_super) {
             context.fillRect(model.noteWidth * note.x, model.noteHeight * note.y, model.noteWidth, model.noteHeight);
         }
     };
-    //
-    // ISelectableThing
-    //
-    // TODO: Decompose out a "find note w/ (x, y)"
-    // TODO: should consider note start and end positions
-    NoteView.prototype.hasSomethingToSelectAt = function (x, y) {
-        var model = this.model;
-        var normalizedX = Math.floor(x / model.noteWidth);
-        var normalizedY = Math.floor(y / model.noteHeight);
-        for (var i = 0; i < this.model.notes.length; i++) {
-            var note = this.model.notes[i];
-            if (note.x == normalizedX && note.y == normalizedY) {
-                return true;
-            }
-        }
-        return false;
-    };
-    NoteView.prototype.selectAt = function (x, y) {
-        var model = this.model;
-        var normalizedX = Math.floor(x / model.noteWidth);
-        var normalizedY = Math.floor(y / model.noteHeight);
-        // Deselect any old selected note (TODO could be optimized)
-        for (var i = 0; i < this.model.notes.length; i++) {
-            var note = this.model.notes[i];
-            if (note.uiState.selected) {
-                note.uiState.selected = false;
-            }
-        }
-        // Select new note
-        for (var i = 0; i < this.model.notes.length; i++) {
-            var note = this.model.notes[i];
-            if (note.x == normalizedX && note.y == normalizedY) {
-                note.uiState.selected = true;
-                break;
-            }
-        }
-    };
-    NoteView.prototype.deselect = function () {
-        console.warn("Stub");
-    };
-    /**
-      How high the selectable thing is in the hierarchy. Bigger numbers are on top of smaller numbers.
-    */
-    NoteView.prototype.depth = function () {
-        return 0;
-    };
-    // NOTE this is wrong
-    /**
-      Register this as a selectable thing. Necessary if you want it to actually be selected...
-    */
-    NoteView.prototype.register = function () {
-        console.warn("stub");
-    };
     return NoteView;
 })(Base);
 // TODO
-// * ISelectableThing should be implemented on the Model rather than the View.
-// * Drawing note stuff should also be moved onto that class.
 // * I should generalize ISelectableThing to IMouseableThing and add both click and select actions?
 // * Is there a better for loop
 var PianoRollView = (function (_super) {
@@ -270,7 +268,7 @@ var PianoRollView = (function (_super) {
     function PianoRollView() {
         _super.call(this);
         var noteView = new NoteView();
-        this.selectableThings = [noteView];
+        this.selectableThings = [noteView.model];
         this.drawableThings = [noteView];
         this.model = new PianoRollModel();
         this.canvas = document.getElementById("main");

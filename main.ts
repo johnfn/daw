@@ -1,5 +1,8 @@
 /// <reference path="references.d.ts" />
 
+// TODO
+//   * Separate out grid from MainView and make that selectable, too.
+
 class C {
   public static NoteWidth = 40;
   public static NoteHeight = 15;
@@ -129,7 +132,7 @@ class PianoRollModel extends Base {
   set canvasHeight(value: number) { this._canvasHeight = value; }
 }
 
-class NoteViewModel extends Base {
+class NoteViewModel extends Base implements ISelectableThing {
   private _noteWidth = C.NoteWidth;
 
   get noteWidth(): number { return this._noteWidth; }
@@ -143,9 +146,77 @@ class NoteViewModel extends Base {
   private _notes: NoteModel[] = [];
 
   get notes(): NoteModel[] { return this._notes; }
+
+  //
+  // ISelectableThing
+  //
+
+  // TODO: Decompose out a "find note w/ (x, y)"
+  // TODO: should consider note start and end positions
+
+  hasSomethingToSelectAt(x: number, y: number): boolean {
+    var normalizedX = Math.floor(x / this.noteWidth);
+    var normalizedY = Math.floor(y / this.noteHeight);
+
+    for (var i = 0; i < this.notes.length; i++) {
+      var note = this.notes[i];
+
+      if (note.x == normalizedX && note.y == normalizedY) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  selectAt(x: number, y: number): void {
+    var normalizedX = Math.floor(x / this.noteWidth);
+    var normalizedY = Math.floor(y / this.noteHeight);
+
+    // Deselect any old selected note (TODO could be optimized)
+
+    for (var i = 0; i < this.notes.length; i++) {
+      var note = this.notes[i];
+
+      if (note.uiState.selected) {
+        note.uiState.selected = false;
+      }
+    }
+
+    // Select new note
+
+    for (var i = 0; i < this.notes.length; i++) {
+      var note = this.notes[i];
+
+      if (note.x == normalizedX && note.y == normalizedY) {
+        note.uiState.selected = true;
+
+        break;
+      }
+    }
+  }
+
+  deselect(): void {
+    console.warn("Stub");
+  }
+
+  /**
+    How high the selectable thing is in the hierarchy. Bigger numbers are on top of smaller numbers.
+  */
+  depth(): number {
+    return 0;
+  }
+
+  // NOTE this is wrong
+  /**
+    Register this as a selectable thing. Necessary if you want it to actually be selected...
+  */
+  register(): void {
+    console.warn("stub");
+  }
 }
 
-class NoteView extends Base implements ISelectableThing, IDrawableThing {
+class NoteView extends Base implements IDrawableThing {
   public model: NoteViewModel = new NoteViewModel();
 
   constructor() {
@@ -190,82 +261,9 @@ class NoteView extends Base implements ISelectableThing, IDrawableThing {
   }
 
 
-  //
-  // ISelectableThing
-  //
-
-    // TODO: Decompose out a "find note w/ (x, y)"
-  // TODO: should consider note start and end positions
-
-  hasSomethingToSelectAt(x: number, y: number): boolean {
-    var model = this.model;
-
-    var normalizedX = Math.floor(x / model.noteWidth);
-    var normalizedY = Math.floor(y / model.noteHeight);
-
-    for (var i = 0; i < this.model.notes.length; i++) {
-      var note = this.model.notes[i];
-
-      if (note.x == normalizedX && note.y == normalizedY) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  selectAt(x: number, y: number): void {
-    var model = this.model;
-
-    var normalizedX = Math.floor(x / model.noteWidth);
-    var normalizedY = Math.floor(y / model.noteHeight);
-
-    // Deselect any old selected note (TODO could be optimized)
-
-    for (var i = 0; i < this.model.notes.length; i++) {
-      var note = this.model.notes[i];
-
-      if (note.uiState.selected) {
-        note.uiState.selected = false;
-      }
-    }
-
-    // Select new note
-
-    for (var i = 0; i < this.model.notes.length; i++) {
-      var note = this.model.notes[i];
-
-      if (note.x == normalizedX && note.y == normalizedY) {
-        note.uiState.selected = true;
-
-        break;
-      }
-    }
-  }
-
-  deselect(): void {
-    console.warn("Stub");
-  }
-
-  /**
-    How high the selectable thing is in the hierarchy. Bigger numbers are on top of smaller numbers.
-  */
-  depth(): number {
-    return 0;
-  }
-
-  // NOTE this is wrong
-  /**
-    Register this as a selectable thing. Necessary if you want it to actually be selected...
-  */
-  register(): void {
-    console.warn("stub");
-  }
 }
 
 // TODO
-// * ISelectableThing should be implemented on the Model rather than the View.
-// * Drawing note stuff should also be moved onto that class.
 // * I should generalize ISelectableThing to IMouseableThing and add both click and select actions?
 // * Is there a better for loop
 
@@ -283,7 +281,7 @@ class PianoRollView extends Base {
 
     var noteView: NoteView = new NoteView();
 
-    this.selectableThings = [noteView];
+    this.selectableThings = [noteView.model];
     this.drawableThings = [noteView];
 
     this.model = new PianoRollModel();
