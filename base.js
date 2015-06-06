@@ -101,7 +101,7 @@ var Base = (function () {
     Base.prototype.bindEverything = function () {
         var fns = [];
         for (var prop in this) {
-            if (isFunction(this[prop]) && !(prop in Base.prototype)) {
+            if (!this.isNetworkProperty(Object.getPrototypeOf(this), prop) && isFunction(this[prop]) && !(prop in Base.prototype)) {
                 fns.push(prop);
             }
         }
