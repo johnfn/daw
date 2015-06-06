@@ -64,6 +64,18 @@ var NoteModel = (function (_super) {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(NoteModel.prototype, "x", {
+        get: function () { return this.start; },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(NoteModel.prototype, "y", {
+        get: function () {
+            return this.octave * NoteModel.keysInOctave().length + NoteModel.keysInOctave().indexOf(this.key);
+        },
+        enumerable: true,
+        configurable: true
+    });
     NoteModel.keysInOctave = function () {
         return ["A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#"];
     };
@@ -209,6 +221,10 @@ var PianoRollModel = (function (_super) {
     });
     return PianoRollModel;
 })(Base);
+//
+// * Pull out the note stuff into a NoteView subclass. This should just be some sort of parent and event dispatcher guy.
+// * Drawing note stuff should also be moved onto that class.
+//
 var PianoRollView = (function (_super) {
     __extends(PianoRollView, _super);
     function PianoRollView() {
@@ -219,12 +235,14 @@ var PianoRollView = (function (_super) {
         this.setUpCanvas();
         var note1 = new NoteModel();
         note1.key = "A";
-        note1.octave = 4;
+        note1.octave = 0;
         note1.length = 3;
+        note1.start = 2;
         var note2 = new NoteModel();
         note2.key = "B";
-        note2.octave = 4;
+        note2.octave = 0;
         note2.length = 4;
+        note2.start = 3;
         this.model.notes.list.push(note1);
         this.model.notes.list.push(note2);
         this.model.selectionModel.type = SelectionType.Grid;
@@ -246,10 +264,15 @@ var PianoRollView = (function (_super) {
     };
     PianoRollView.prototype.mouseMove = function (x, y) {
         var model = this.model;
+        /*
         var selection = this.model.selectionModel;
+    
         selection.type = SelectionType.Grid;
+    
         selection.selectedGridX = Math.floor(x / model.noteWidth);
         selection.selectedGridY = Math.floor(y / model.noteHeight);
+        */
+        console.log(this.hasSomethingToSelectAt(x, y));
     };
     PianoRollView.prototype.render = function () {
         var model = this.model;
@@ -275,9 +298,48 @@ var PianoRollView = (function (_super) {
         for (var i = 0; i < model.notes.list.length; i++) {
             var note = model.notes.list[i];
             this.context.fillStyle = "rgb(255, 0, 0)";
-            this.context.fillRect(model.noteWidth * note.length, 5 * model.noteHeight, model.noteWidth, model.noteHeight);
+            this.context.fillRect(model.noteWidth * note.x, model.noteHeight * note.y, model.noteWidth, model.noteHeight);
         }
         window.requestAnimationFrame(this.render);
+    };
+    //
+    // ISelectableThing
+    //
+    // TODO: should be moved into a note-specific subclass
+    // TODO: should consider note start and end positions
+    // TODO: Should change F12 to Cmd + y
+    PianoRollView.prototype.hasSomethingToSelectAt = function (x, y) {
+        var model = this.model;
+        var normalizedX = Math.floor(x / model.noteWidth);
+        var normalizedY = Math.floor(y / model.noteHeight);
+        for (var i = 0; i < this.model.notes.list.length; i++) {
+            var note = this.model.notes.list[i];
+            console.log("x " + note.x + " y " + note.y);
+            console.log("Normalized: x " + normalizedX + " y " + normalizedY);
+            if (note.x == normalizedX && note.y == normalizedY) {
+                return true;
+            }
+        }
+        return false;
+    };
+    PianoRollView.prototype.selectAt = function (x, y) {
+        console.warn("Stub");
+    };
+    PianoRollView.prototype.deselect = function () {
+        console.warn("Stub");
+    };
+    /**
+      How high the selectable thing is in the hierarchy. Bigger numbers are on top of smaller numbers.
+    */
+    PianoRollView.prototype.depth = function () {
+        return 0;
+    };
+    // NOTE this is wrong
+    /**
+      Register this as a selectable thing. Necessary if you want it to actually be selected...
+    */
+    PianoRollView.prototype.register = function () {
+        console.warn("stub");
     };
     return PianoRollView;
 })(Base);
