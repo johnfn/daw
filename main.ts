@@ -151,7 +151,7 @@ class NoteViewModel extends Base implements ISelectableThing {
   // ISelectableThing
   //
 
-  // TODO: Decompose out a "find note w/ (x, y)"
+  // TODO: Decompose out a "get note @ (x, y)"
   // TODO: should consider note start and end positions
 
   hasSomethingToSelectAt(x: number, y: number): boolean {
@@ -159,7 +159,7 @@ class NoteViewModel extends Base implements ISelectableThing {
     var normalizedY = Math.floor(y / this.noteHeight);
 
     for (var note of this.notes) {
-      if (note.x == normalizedX && note.y == normalizedY) {
+      if (normalizedX >= note.x && normalizedX < note.x + note.length && note.y == normalizedY) {
         return true;
       }
     }
@@ -182,7 +182,7 @@ class NoteViewModel extends Base implements ISelectableThing {
     // Select new note
 
     for (var note of this.notes) {
-      if (note.x == normalizedX && note.y == normalizedY) {
+      if (normalizedX >= note.x && normalizedX < note.x + note.length && note.y == normalizedY) {
         note.uiState.selected = true;
 
         break;
@@ -219,7 +219,7 @@ class NoteView extends Base implements IDrawableThing {
     var note1 = new NoteModel();
     note1.key = "A";
     note1.octave = 0;
-    note1.length = 3;
+    note1.length = 2;
     note1.start = 2;
 
     var note2 = new NoteModel();
@@ -248,7 +248,7 @@ class NoteView extends Base implements IDrawableThing {
         context.fillStyle = "rgb(255, 0, 0)";
       }
 
-      context.fillRect(model.noteWidth * note.x, model.noteHeight * note.y, model.noteWidth, model.noteHeight);
+      context.fillRect(model.noteWidth * note.x, model.noteHeight * note.y, model.noteWidth * note.length, model.noteHeight);
     }
   }
 }

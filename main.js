@@ -173,14 +173,14 @@ var NoteViewModel = (function (_super) {
     //
     // ISelectableThing
     //
-    // TODO: Decompose out a "find note w/ (x, y)"
+    // TODO: Decompose out a "get note @ (x, y)"
     // TODO: should consider note start and end positions
     NoteViewModel.prototype.hasSomethingToSelectAt = function (x, y) {
         var normalizedX = Math.floor(x / this.noteWidth);
         var normalizedY = Math.floor(y / this.noteHeight);
         for (var _i = 0, _a = this.notes; _i < _a.length; _i++) {
             var note = _a[_i];
-            if (note.x == normalizedX && note.y == normalizedY) {
+            if (normalizedX >= note.x && normalizedX < note.x + note.length && note.y == normalizedY) {
                 return true;
             }
         }
@@ -199,7 +199,7 @@ var NoteViewModel = (function (_super) {
         // Select new note
         for (var _b = 0, _c = this.notes; _b < _c.length; _b++) {
             var note = _c[_b];
-            if (note.x == normalizedX && note.y == normalizedY) {
+            if (normalizedX >= note.x && normalizedX < note.x + note.length && note.y == normalizedY) {
                 note.uiState.selected = true;
                 break;
             }
@@ -231,7 +231,7 @@ var NoteView = (function (_super) {
         var note1 = new NoteModel();
         note1.key = "A";
         note1.octave = 0;
-        note1.length = 3;
+        note1.length = 2;
         note1.start = 2;
         var note2 = new NoteModel();
         note2.key = "B";
@@ -255,7 +255,7 @@ var NoteView = (function (_super) {
             else {
                 context.fillStyle = "rgb(255, 0, 0)";
             }
-            context.fillRect(model.noteWidth * note.x, model.noteHeight * note.y, model.noteWidth, model.noteHeight);
+            context.fillRect(model.noteWidth * note.x, model.noteHeight * note.y, model.noteWidth * note.length, model.noteHeight);
         }
     };
     return NoteView;
