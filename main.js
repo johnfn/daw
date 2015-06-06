@@ -5,6 +5,13 @@ var __extends = this.__extends || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
+var C = (function () {
+    function C() {
+    }
+    C.NoteWidth = 40;
+    C.NoteHeight = 15;
+    return C;
+})();
 var NoteUIState = (function (_super) {
     __extends(NoteUIState, _super);
     function NoteUIState() {
@@ -166,12 +173,9 @@ var PianoRollModel = (function (_super) {
         _super.apply(this, arguments);
         this._widthInNotes = 20;
         this._heightInNotes = 20;
-        this._noteWidth = 40;
-        this._noteHeight = 15;
         this._canvasWidth = 600;
         this._canvasHeight = 600;
         this._selectionModel = new SelectionModel();
-        this._notes = new AllNotes();
     }
     Object.defineProperty(PianoRollModel.prototype, "widthInNotes", {
         get: function () { return this._widthInNotes; },
@@ -182,18 +186,6 @@ var PianoRollModel = (function (_super) {
     Object.defineProperty(PianoRollModel.prototype, "heightInNotes", {
         get: function () { return this._heightInNotes; },
         set: function (value) { this._heightInNotes = value; },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(PianoRollModel.prototype, "noteWidth", {
-        get: function () { return this._noteWidth; },
-        set: function (value) { this._noteWidth = value; },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(PianoRollModel.prototype, "noteHeight", {
-        get: function () { return this._noteHeight; },
-        set: function (value) { this._noteHeight = value; },
         enumerable: true,
         configurable: true
     });
@@ -214,18 +206,116 @@ var PianoRollModel = (function (_super) {
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(PianoRollModel.prototype, "notes", {
-        get: function () { return this._notes; },
+    return PianoRollModel;
+})(Base);
+// TODO
+// * Since AllNotes is just a wrapper around an array, collapse it into this model.
+var NoteViewModel = (function (_super) {
+    __extends(NoteViewModel, _super);
+    function NoteViewModel() {
+        _super.apply(this, arguments);
+        this._noteWidth = C.NoteWidth;
+        this._noteHeight = C.NoteHeight;
+        this.notes = new AllNotes();
+    }
+    Object.defineProperty(NoteViewModel.prototype, "noteWidth", {
+        get: function () { return this._noteWidth; },
+        set: function (value) { this._noteWidth = value; },
         enumerable: true,
         configurable: true
     });
-    return PianoRollModel;
+    Object.defineProperty(NoteViewModel.prototype, "noteHeight", {
+        get: function () { return this._noteHeight; },
+        set: function (value) { this._noteHeight = value; },
+        enumerable: true,
+        configurable: true
+    });
+    return NoteViewModel;
+})(Base);
+var NoteView = (function (_super) {
+    __extends(NoteView, _super);
+    function NoteView() {
+        _super.apply(this, arguments);
+        this.model = new NoteViewModel();
+    }
+    //
+    // IDrawableThing
+    //
+    NoteView.prototype.render = function (context) {
+        var model = this.model;
+        // Draw notes
+        for (var i = 0; i < model.notes.list.length; i++) {
+            var note = model.notes.list[i];
+            if (note.uiState.selected) {
+                context.fillStyle = "rgb(255, 100, 100)";
+            }
+            else {
+                context.fillStyle = "rgb(255, 0, 0)";
+            }
+            context.fillRect(model.noteWidth * note.x, model.noteHeight * note.y, model.noteWidth, model.noteHeight);
+        }
+    };
+    //
+    // ISelectableThing
+    //
+    // TODO: Decompose out a "find note w/ (x, y)"
+    // TODO: should consider note start and end positions
+    NoteView.prototype.hasSomethingToSelectAt = function (x, y) {
+        var model = this.model;
+        var normalizedX = Math.floor(x / model.noteWidth);
+        var normalizedY = Math.floor(y / model.noteHeight);
+        for (var i = 0; i < this.model.notes.list.length; i++) {
+            var note = this.model.notes.list[i];
+            if (note.x == normalizedX && note.y == normalizedY) {
+                return true;
+            }
+        }
+        return false;
+    };
+    NoteView.prototype.selectAt = function (x, y) {
+        var model = this.model;
+        var normalizedX = Math.floor(x / model.noteWidth);
+        var normalizedY = Math.floor(y / model.noteHeight);
+        // Deselect any old selected note (TODO could be optimized)
+        for (var i = 0; i < this.model.notes.list.length; i++) {
+            var note = this.model.notes.list[i];
+            if (note.uiState.selected) {
+                note.uiState.selected = false;
+            }
+        }
+        // Select new note
+        for (var i = 0; i < this.model.notes.list.length; i++) {
+            var note = this.model.notes.list[i];
+            if (note.x == normalizedX && note.y == normalizedY) {
+                note.uiState.selected = true;
+                break;
+            }
+        }
+    };
+    NoteView.prototype.deselect = function () {
+        console.warn("Stub");
+    };
+    /**
+      How high the selectable thing is in the hierarchy. Bigger numbers are on top of smaller numbers.
+    */
+    NoteView.prototype.depth = function () {
+        return 0;
+    };
+    // NOTE this is wrong
+    /**
+      Register this as a selectable thing. Necessary if you want it to actually be selected...
+    */
+    NoteView.prototype.register = function () {
+        console.warn("stub");
+    };
+    return NoteView;
 })(Base);
 // TODO
 // * Pull out the note stuff into a NoteView subclass. This should just be some sort of parent and event dispatcher guy.
 //   * [this] should be changed
 //   * isSelected should be moved (internal selection state) preferrably onto the model...
 //     * does isSelected even matter? Kinda?
+//   * Remove the selectionModel from the model entirely.
 // * ISelectableThing should be implemented on the Model rather than the View.
 // * Drawing note stuff should also be moved onto that class.
 // * I should generalize ISelectableThing to IMouseableThing and add both click and select actions?
@@ -234,8 +324,9 @@ var PianoRollView = (function (_super) {
     __extends(PianoRollView, _super);
     function PianoRollView() {
         _super.call(this);
-        this.isSelected = false;
-        this.selectableThings = [this];
+        var noteView = new NoteView();
+        this.selectableThings = [noteView];
+        this.drawableThings = [noteView];
         this.model = new PianoRollModel();
         this.canvas = document.getElementById("main");
         this.context = this.canvas.getContext('2d');
@@ -250,8 +341,8 @@ var PianoRollView = (function (_super) {
         note2.octave = 0;
         note2.length = 4;
         note2.start = 3;
-        this.model.notes.list.push(note1);
-        this.model.notes.list.push(note2);
+        noteView.model.notes.list.push(note1);
+        noteView.model.notes.list.push(note2);
         this.model.selectionModel.type = SelectionType.Grid;
         this.model.selectionModel.selectedGridX = 0;
         this.model.selectionModel.selectedGridY = 0;
@@ -273,11 +364,12 @@ var PianoRollView = (function (_super) {
         for (var i = 0; i < this.selectableThings.length; i++) {
             var thing = this.selectableThings[i];
             if (thing.hasSomethingToSelectAt(x, y)) {
-                this.selectAt(x, y);
+                thing.selectAt(x, y);
                 break;
             }
         }
     };
+    // TODO: Once I separate out the grid class, instead of using C.NoteBleh, put that onto the grid model
     PianoRollView.prototype.render = function () {
         var model = this.model;
         var selection = this.model.selectionModel;
@@ -285,85 +377,23 @@ var PianoRollView = (function (_super) {
         // Draw grid
         for (var i = 0; i < model.widthInNotes; i++) {
             for (var j = 0; j < model.heightInNotes; j++) {
-                this.context.strokeRect(i * model.noteWidth, j * model.noteHeight, model.noteWidth, model.noteHeight);
+                this.context.strokeRect(i * C.NoteWidth, j * C.NoteHeight, C.NoteWidth, C.NoteHeight);
             }
         }
         if (selection.type == SelectionType.Grid) {
             this.context.fillStyle = "rgb(230, 230, 230)";
-            this.context.fillRect(model.noteWidth * selection.selectedGridX, model.noteHeight * selection.selectedGridY, model.noteWidth, model.noteHeight);
+            this.context.fillRect(C.NoteWidth * selection.selectedGridX, C.NoteHeight * selection.selectedGridY, C.NoteWidth, C.NoteHeight);
         }
         // Draw note descriptions
         var noteNames = NoteModel.getAllNotes();
         for (var j = 0; j < model.heightInNotes; j++) {
-            this.context.strokeText(noteNames[j], 5, j * model.noteHeight - 5);
+            this.context.strokeText(noteNames[j], 5, j * C.NoteHeight - 5);
         }
         // Draw notes
-        for (var i = 0; i < model.notes.list.length; i++) {
-            var note = model.notes.list[i];
-            if (note.uiState.selected) {
-                this.context.fillStyle = "rgb(255, 100, 100)";
-            }
-            else {
-                this.context.fillStyle = "rgb(255, 0, 0)";
-            }
-            this.context.fillRect(model.noteWidth * note.x, model.noteHeight * note.y, model.noteWidth, model.noteHeight);
+        for (var i = 0; i < this.drawableThings.length; i++) {
+            this.drawableThings[i].render(this.context);
         }
         window.requestAnimationFrame(this.render);
-    };
-    //
-    // ISelectableThing
-    //
-    // TODO: should be moved into a note-specific subclass
-    // TODO: Decompose out a "find note w/ (x, y)"
-    // TODO: should consider note start and end positions
-    PianoRollView.prototype.hasSomethingToSelectAt = function (x, y) {
-        var model = this.model;
-        var normalizedX = Math.floor(x / model.noteWidth);
-        var normalizedY = Math.floor(y / model.noteHeight);
-        for (var i = 0; i < this.model.notes.list.length; i++) {
-            var note = this.model.notes.list[i];
-            if (note.x == normalizedX && note.y == normalizedY) {
-                return true;
-            }
-        }
-        return false;
-    };
-    PianoRollView.prototype.selectAt = function (x, y) {
-        var model = this.model;
-        var normalizedX = Math.floor(x / model.noteWidth);
-        var normalizedY = Math.floor(y / model.noteHeight);
-        // Deselect any old selected note (could be optimized)
-        for (var i = 0; i < this.model.notes.list.length; i++) {
-            var note = this.model.notes.list[i];
-            if (note.uiState.selected) {
-                note.uiState.selected = false;
-            }
-        }
-        // Select new note
-        for (var i = 0; i < this.model.notes.list.length; i++) {
-            var note = this.model.notes.list[i];
-            if (note.x == normalizedX && note.y == normalizedY) {
-                note.uiState.selected = true;
-                this.isSelected = true;
-                break;
-            }
-        }
-    };
-    PianoRollView.prototype.deselect = function () {
-        console.warn("Stub");
-    };
-    /**
-      How high the selectable thing is in the hierarchy. Bigger numbers are on top of smaller numbers.
-    */
-    PianoRollView.prototype.depth = function () {
-        return 0;
-    };
-    // NOTE this is wrong
-    /**
-      Register this as a selectable thing. Necessary if you want it to actually be selected...
-    */
-    PianoRollView.prototype.register = function () {
-        console.warn("stub");
     };
     return PianoRollView;
 })(Base);

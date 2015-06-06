@@ -1,5 +1,10 @@
 /// <reference path="references.d.ts" />
 
+class C {
+  public static NoteWidth = 40;
+  public static NoteHeight = 15;
+}
+
 class NoteUIState extends Base {
   private _selected = false;
 
@@ -95,6 +100,10 @@ enum SelectionType {
   None
 };
 
+interface IDrawableThing {
+  render(context: CanvasRenderingContext2D): void;
+}
+
 interface ISelectableThing {
   /**
     x and y are pixel values that have not been normalized (except such that (0, 0) is the top left of the canvas)
@@ -159,16 +168,6 @@ class PianoRollModel extends Base {
   get heightInNotes(): number { return this._heightInNotes; }
   set heightInNotes(value: number) { this._heightInNotes = value; }
 
-  private _noteWidth = 40;
-
-  get noteWidth(): number { return this._noteWidth; }
-  set noteWidth(value: number) { this._noteWidth = value; }
-
-  private _noteHeight = 15;
-
-  get noteHeight(): number { return this._noteHeight; }
-  set noteHeight(value: number) { this._noteHeight = value; }
-
   private _canvasWidth = 600;
 
   get canvasWidth(): number { return this._canvasWidth; }
@@ -182,122 +181,34 @@ class PianoRollModel extends Base {
   private _selectionModel = new SelectionModel();
 
   get selectionModel(): SelectionModel { return this._selectionModel; }
-
-  private _notes: AllNotes = new AllNotes();
-
-  get notes(): AllNotes { return this._notes; }
 }
 
-
 // TODO
-// * Pull out the note stuff into a NoteView subclass. This should just be some sort of parent and event dispatcher guy.
-//   * [this] should be changed
-//   * isSelected should be moved (internal selection state) preferrably onto the model...
-//     * does isSelected even matter? Kinda?
-// * ISelectableThing should be implemented on the Model rather than the View.
-// * Drawing note stuff should also be moved onto that class.
-// * I should generalize ISelectableThing to IMouseableThing and add both click and select actions?
-// * Is there a better for loop
+// * Since AllNotes is just a wrapper around an array, collapse it into this model.
 
-class PianoRollView extends Base implements ISelectableThing {
-  private canvas: HTMLCanvasElement;
-  private context: CanvasRenderingContext2D;
+class NoteViewModel extends Base {
+  private _noteWidth = C.NoteWidth;
 
-  private model: PianoRollModel;
+  get noteWidth(): number { return this._noteWidth; }
+  set noteWidth(value: number) { this._noteWidth = value; }
 
-  private selectableThings: ISelectableThing[];
+  private _noteHeight = C.NoteHeight;
 
-  private isSelected: boolean = false;
+  get noteHeight(): number { return this._noteHeight; }
+  set noteHeight(value: number) { this._noteHeight = value; }
 
-  constructor() {
-    super();
+  public notes: AllNotes = new AllNotes();
+}
 
-    this.selectableThings = [this];
+class NoteView extends Base implements ISelectableThing, IDrawableThing {
+  public model: NoteViewModel = new NoteViewModel();
 
-    this.model = new PianoRollModel();
+  //
+  // IDrawableThing
+  //
 
-    this.canvas = <HTMLCanvasElement> document.getElementById("main");
-    this.context = <CanvasRenderingContext2D> this.canvas.getContext('2d');
-
-    this.setUpCanvas();
-
-    var note1 = new NoteModel();
-    note1.key = "A";
-    note1.octave = 0;
-    note1.length = 3;
-    note1.start = 2;
-
-    var note2 = new NoteModel();
-    note2.key = "B";
-    note2.octave = 0;
-    note2.length = 4;
-    note2.start = 3;
-
-    this.model.notes.list.push(note1);
-    this.model.notes.list.push(note2);
-
-    this.model.selectionModel.type = SelectionType.Grid;
-    this.model.selectionModel.selectedGridX = 0;
-    this.model.selectionModel.selectedGridY = 0;
-
-    window.requestAnimationFrame(this.render);
-  }
-
-  private getItemAtPoint(x: number, y: number) {
-    // Check notes
-  }
-
-  private setUpCanvas() {
-    this.canvas.width = this.model.canvasWidth;
-    this.canvas.height = this.model.canvasHeight;
-
-    this.context.translate(0.5, 0.5);
-
-    this.canvas.addEventListener("mousemove", (ev: MouseEvent) => {
-      this.mouseMove(ev.offsetX, ev.offsetY);
-    });
-  }
-
-  private mouseMove(x: number, y: number) {
-
-    for (var i = 0; i < this.selectableThings.length; i++) {
-      var thing: ISelectableThing = this.selectableThings[i];
-
-      if (thing.hasSomethingToSelectAt(x, y)) {
-        this.selectAt(x, y);
-
-        break;
-      }
-    }
-
-  }
-
-  private render() {
+  public render(context: CanvasRenderingContext2D): void {
     var model = this.model;
-    var selection = this.model.selectionModel;
-
-    this.context.clearRect(0, 0, this.model.canvasWidth, this.model.canvasHeight);
-
-    // Draw grid
-
-    for (var i = 0; i < model.widthInNotes; i++) {
-      for (var j = 0; j < model.heightInNotes; j++) {
-        this.context.strokeRect(i * model.noteWidth, j * model.noteHeight, model.noteWidth, model.noteHeight);
-      }
-    }
-
-    if (selection.type == SelectionType.Grid) {
-      this.context.fillStyle = "rgb(230, 230, 230)";
-      this.context.fillRect(model.noteWidth * selection.selectedGridX, model.noteHeight * selection.selectedGridY, model.noteWidth, model.noteHeight);
-    }
-
-    // Draw note descriptions
-
-    var noteNames = NoteModel.getAllNotes();
-
-    for (var j = 0; j < model.heightInNotes; j++) {
-      this.context.strokeText(noteNames[j], 5, j * model.noteHeight - 5);
-    }
 
     // Draw notes
 
@@ -305,22 +216,20 @@ class PianoRollView extends Base implements ISelectableThing {
       var note: NoteModel = model.notes.list[i];
 
       if (note.uiState.selected) {
-        this.context.fillStyle = "rgb(255, 100, 100)";
+        context.fillStyle = "rgb(255, 100, 100)";
       } else {
-        this.context.fillStyle = "rgb(255, 0, 0)";
+        context.fillStyle = "rgb(255, 0, 0)";
       }
 
-      this.context.fillRect(model.noteWidth * note.x, model.noteHeight * note.y, model.noteWidth, model.noteHeight);
+      context.fillRect(model.noteWidth * note.x, model.noteHeight * note.y, model.noteWidth, model.noteHeight);
     }
-
-    window.requestAnimationFrame(this.render);
   }
+
 
   //
   // ISelectableThing
   //
 
-  // TODO: should be moved into a note-specific subclass
     // TODO: Decompose out a "find note w/ (x, y)"
   // TODO: should consider note start and end positions
 
@@ -347,7 +256,7 @@ class PianoRollView extends Base implements ISelectableThing {
     var normalizedX = Math.floor(x / model.noteWidth);
     var normalizedY = Math.floor(y / model.noteHeight);
 
-    // Deselect any old selected note (could be optimized)
+    // Deselect any old selected note (TODO could be optimized)
 
     for (var i = 0; i < this.model.notes.list.length; i++) {
       var note = this.model.notes.list[i];
@@ -364,7 +273,6 @@ class PianoRollView extends Base implements ISelectableThing {
 
       if (note.x == normalizedX && note.y == normalizedY) {
         note.uiState.selected = true;
-        this.isSelected = true;
 
         break;
       }
@@ -389,6 +297,130 @@ class PianoRollView extends Base implements ISelectableThing {
   register(): void {
     console.warn("stub");
   }
+}
+
+// TODO
+// * Pull out the note stuff into a NoteView subclass. This should just be some sort of parent and event dispatcher guy.
+//   * [this] should be changed
+//   * isSelected should be moved (internal selection state) preferrably onto the model...
+//     * does isSelected even matter? Kinda?
+//   * Remove the selectionModel from the model entirely.
+// * ISelectableThing should be implemented on the Model rather than the View.
+// * Drawing note stuff should also be moved onto that class.
+// * I should generalize ISelectableThing to IMouseableThing and add both click and select actions?
+// * Is there a better for loop
+
+class PianoRollView extends Base {
+  private canvas: HTMLCanvasElement;
+  private context: CanvasRenderingContext2D;
+
+  private model: PianoRollModel;
+
+  private selectableThings: ISelectableThing[];
+  private drawableThings: IDrawableThing[];
+
+  constructor() {
+    super();
+
+    var noteView: NoteView = new NoteView();
+
+    this.selectableThings = [noteView];
+    this.drawableThings = [noteView];
+
+    this.model = new PianoRollModel();
+
+    this.canvas = <HTMLCanvasElement> document.getElementById("main");
+    this.context = <CanvasRenderingContext2D> this.canvas.getContext('2d');
+
+    this.setUpCanvas();
+
+    var note1 = new NoteModel();
+    note1.key = "A";
+    note1.octave = 0;
+    note1.length = 3;
+    note1.start = 2;
+
+    var note2 = new NoteModel();
+    note2.key = "B";
+    note2.octave = 0;
+    note2.length = 4;
+    note2.start = 3;
+
+    noteView.model.notes.list.push(note1);
+    noteView.model.notes.list.push(note2);
+
+    this.model.selectionModel.type = SelectionType.Grid;
+    this.model.selectionModel.selectedGridX = 0;
+    this.model.selectionModel.selectedGridY = 0;
+
+    window.requestAnimationFrame(this.render);
+  }
+
+  private getItemAtPoint(x: number, y: number) {
+    // Check notes
+  }
+
+  private setUpCanvas() {
+    this.canvas.width = this.model.canvasWidth;
+    this.canvas.height = this.model.canvasHeight;
+
+    this.context.translate(0.5, 0.5);
+
+    this.canvas.addEventListener("mousemove", (ev: MouseEvent) => {
+      this.mouseMove(ev.offsetX, ev.offsetY);
+    });
+  }
+
+  private mouseMove(x: number, y: number) {
+    for (var i = 0; i < this.selectableThings.length; i++) {
+      var thing: ISelectableThing = this.selectableThings[i];
+
+      if (thing.hasSomethingToSelectAt(x, y)) {
+        thing.selectAt(x, y);
+
+        break;
+      }
+    }
+
+  }
+
+  // TODO: Once I separate out the grid class, instead of using C.NoteBleh, put that onto the grid model
+  private render() {
+    var model = this.model;
+    var selection = this.model.selectionModel;
+
+    this.context.clearRect(0, 0, this.model.canvasWidth, this.model.canvasHeight);
+
+    // Draw grid
+
+    for (var i = 0; i < model.widthInNotes; i++) {
+      for (var j = 0; j < model.heightInNotes; j++) {
+        this.context.strokeRect(i * C.NoteWidth, j * C.NoteHeight, C.NoteWidth, C.NoteHeight);
+      }
+    }
+
+    if (selection.type == SelectionType.Grid) {
+      this.context.fillStyle = "rgb(230, 230, 230)";
+      this.context.fillRect(C.NoteWidth * selection.selectedGridX, C.NoteHeight * selection.selectedGridY, C.NoteWidth, C.NoteHeight);
+    }
+
+    // Draw note descriptions
+
+    var noteNames = NoteModel.getAllNotes();
+
+    for (var j = 0; j < model.heightInNotes; j++) {
+      this.context.strokeText(noteNames[j], 5, j * C.NoteHeight - 5);
+    }
+
+    // Draw notes
+
+    for (var i = 0; i < this.drawableThings.length; i++) {
+      this.drawableThings[i].render(this.context);
+    }
+
+    window.requestAnimationFrame(this.render);
+  }
+
 }
 
 var test: PianoRollModel = new PianoRollModel();
