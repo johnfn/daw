@@ -1,0 +1,13 @@
+canvas {
+  width: 600px;
+  height: 600px;
+}
+
+.container {
+  width: 400px;
+  height: 400px;
+
+  overflow: scroll;
+
+  border: 1px solid lightgray;
+}
