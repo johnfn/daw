@@ -2,8 +2,8 @@ interface EventCB { (...attrs: any[]): any };
 
 var fileCache: { [key: string]: string } = {};
 
-function filter<T>(list: T[], callback: (T) => boolean): T[] {
-  var result = [];
+function filter<T>(list: T[], callback: (t: T) => boolean): T[] {
+  var result: T[] = [];
   var len = list.length;
 
   for (var i = 0; i < len; i++) {
@@ -17,6 +17,32 @@ function filter<T>(list: T[], callback: (T) => boolean): T[] {
 
 function isFunction(obj: any) {
   return typeof obj == 'function' || false;
+}
+
+/**
+  Maybe type in the spirit of Haskell to indicate nullable types. Though, not quite as cool as Haskell.
+*/
+class Maybe<T> {
+  public hasValue: boolean = false;
+  private _value: T;
+
+  constructor(value: T = undefined) {
+    this.value = value;
+  }
+
+  get value(): T {
+    if (this.hasValue) {
+      return this._value;
+    }
+
+    console.error("asked for value of Maybe without a value");
+  }
+
+  set value(value: T) {
+    this._value = value;
+
+    this.hasValue = value !== undefined;
+  }
 }
 
 /**

@@ -3,6 +3,7 @@
 // TODO
 //   * Separate out grid from MainView and make that selectable, too.
 
+
 class C {
   public static NoteWidth = 40;
   public static NoteHeight = 15;
@@ -147,46 +148,48 @@ class NoteViewModel extends Base implements ISelectableThing {
 
   get notes(): NoteModel[] { return this._notes; }
 
+  /**
+    Returns the note at (x, y) (normalized to grid positions) or undefined
+    if there isn't one.
+  */
+  private getNoteAt(x: number, y: number): Maybe<NoteModel> {
+    var normalizedX = Math.floor(x / this.noteWidth);
+    var normalizedY = Math.floor(y / this.noteHeight);
+
+    for (var note of this.notes) {
+      if (normalizedX >= note.x && normalizedX < note.x + note.length && note.y == normalizedY) {
+        return new Maybe(note);
+      }
+    }
+
+    return new Maybe<NoteModel>();
+  }
+
   //
   // ISelectableThing
   //
 
   // TODO: Decompose out a "get note @ (x, y)"
-  // TODO: should consider note start and end positions
 
   hasSomethingToSelectAt(x: number, y: number): boolean {
-    var normalizedX = Math.floor(x / this.noteWidth);
-    var normalizedY = Math.floor(y / this.noteHeight);
-
-    for (var note of this.notes) {
-      if (normalizedX >= note.x && normalizedX < note.x + note.length && note.y == normalizedY) {
-        return true;
-      }
-    }
-
-    return false;
+    return this.getNoteAt(x, y).hasValue;
   }
 
   selectAt(x: number, y: number): void {
-    var normalizedX = Math.floor(x / this.noteWidth);
-    var normalizedY = Math.floor(y / this.noteHeight);
-
     // Deselect any old selected note (TODO could be optimized)
 
-    for (var note of this.notes) {
-      if (note.uiState.selected) {
-        note.uiState.selected = false;
+    for (var n of this.notes) {
+      if (n.uiState.selected) {
+        n.uiState.selected = false;
       }
     }
 
     // Select new note
 
-    for (var note of this.notes) {
-      if (normalizedX >= note.x && normalizedX < note.x + note.length && note.y == normalizedY) {
-        note.uiState.selected = true;
+    var note = this.getNoteAt(x, y);
 
-        break;
-      }
+    if (note.hasValue) {
+      note.value.uiState.selected = true;
     }
   }
 

@@ -170,39 +170,40 @@ var NoteViewModel = (function (_super) {
         enumerable: true,
         configurable: true
     });
+    /**
+      Returns the note at (x, y) (normalized to grid positions) or undefined
+      if there isn't one.
+    */
+    NoteViewModel.prototype.getNoteAt = function (x, y) {
+        var normalizedX = Math.floor(x / this.noteWidth);
+        var normalizedY = Math.floor(y / this.noteHeight);
+        for (var _i = 0, _a = this.notes; _i < _a.length; _i++) {
+            var note = _a[_i];
+            if (normalizedX >= note.x && normalizedX < note.x + note.length && note.y == normalizedY) {
+                return new Maybe(note);
+            }
+        }
+        return new Maybe();
+    };
     //
     // ISelectableThing
     //
     // TODO: Decompose out a "get note @ (x, y)"
-    // TODO: should consider note start and end positions
     NoteViewModel.prototype.hasSomethingToSelectAt = function (x, y) {
-        var normalizedX = Math.floor(x / this.noteWidth);
-        var normalizedY = Math.floor(y / this.noteHeight);
-        for (var _i = 0, _a = this.notes; _i < _a.length; _i++) {
-            var note = _a[_i];
-            if (normalizedX >= note.x && normalizedX < note.x + note.length && note.y == normalizedY) {
-                return true;
-            }
-        }
-        return false;
+        return this.getNoteAt(x, y).hasValue;
     };
     NoteViewModel.prototype.selectAt = function (x, y) {
-        var normalizedX = Math.floor(x / this.noteWidth);
-        var normalizedY = Math.floor(y / this.noteHeight);
         // Deselect any old selected note (TODO could be optimized)
         for (var _i = 0, _a = this.notes; _i < _a.length; _i++) {
-            var note = _a[_i];
-            if (note.uiState.selected) {
-                note.uiState.selected = false;
+            var n = _a[_i];
+            if (n.uiState.selected) {
+                n.uiState.selected = false;
             }
         }
         // Select new note
-        for (var _b = 0, _c = this.notes; _b < _c.length; _b++) {
-            var note = _c[_b];
-            if (normalizedX >= note.x && normalizedX < note.x + note.length && note.y == normalizedY) {
-                note.uiState.selected = true;
-                break;
-            }
+        var note = this.getNoteAt(x, y);
+        if (note.hasValue) {
+            note.value.uiState.selected = true;
         }
     };
     NoteViewModel.prototype.deselect = function () {

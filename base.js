@@ -14,6 +14,31 @@ function isFunction(obj) {
     return typeof obj == 'function' || false;
 }
 /**
+  Maybe type in the spirit of Haskell to indicate nullable types. Though, not quite as cool as Haskell.
+*/
+var Maybe = (function () {
+    function Maybe(value) {
+        if (value === void 0) { value = undefined; }
+        this.hasValue = false;
+        this.value = value;
+    }
+    Object.defineProperty(Maybe.prototype, "value", {
+        get: function () {
+            if (this.hasValue) {
+                return this._value;
+            }
+            console.error("asked for value of Maybe without a value");
+        },
+        set: function (value) {
+            this._value = value;
+            this.hasValue = value !== undefined;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    return Maybe;
+})();
+/**
   Simple wrapper for objects that adds some event listening capabilities. Any getter/setter
   pairs defined on an inheriting object will automatically trigger events on that object when used.
 */
