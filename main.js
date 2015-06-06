@@ -178,8 +178,8 @@ var NoteViewModel = (function (_super) {
     NoteViewModel.prototype.hasSomethingToSelectAt = function (x, y) {
         var normalizedX = Math.floor(x / this.noteWidth);
         var normalizedY = Math.floor(y / this.noteHeight);
-        for (var i = 0; i < this.notes.length; i++) {
-            var note = this.notes[i];
+        for (var _i = 0, _a = this.notes; _i < _a.length; _i++) {
+            var note = _a[_i];
             if (note.x == normalizedX && note.y == normalizedY) {
                 return true;
             }
@@ -190,15 +190,15 @@ var NoteViewModel = (function (_super) {
         var normalizedX = Math.floor(x / this.noteWidth);
         var normalizedY = Math.floor(y / this.noteHeight);
         // Deselect any old selected note (TODO could be optimized)
-        for (var i = 0; i < this.notes.length; i++) {
-            var note = this.notes[i];
+        for (var _i = 0, _a = this.notes; _i < _a.length; _i++) {
+            var note = _a[_i];
             if (note.uiState.selected) {
                 note.uiState.selected = false;
             }
         }
         // Select new note
-        for (var i = 0; i < this.notes.length; i++) {
-            var note = this.notes[i];
+        for (var _b = 0, _c = this.notes; _b < _c.length; _b++) {
+            var note = _c[_b];
             if (note.x == normalizedX && note.y == normalizedY) {
                 note.uiState.selected = true;
                 break;
@@ -247,8 +247,8 @@ var NoteView = (function (_super) {
     NoteView.prototype.render = function (context) {
         var model = this.model;
         // Draw notes
-        for (var i = 0; i < model.notes.length; i++) {
-            var note = model.notes[i];
+        for (var _i = 0, _a = model.notes; _i < _a.length; _i++) {
+            var note = _a[_i];
             if (note.uiState.selected) {
                 context.fillStyle = "rgb(255, 100, 100)";
             }
@@ -262,7 +262,6 @@ var NoteView = (function (_super) {
 })(Base);
 // TODO
 // * I should generalize ISelectableThing to IMouseableThing and add both click and select actions?
-// * Is there a better for loop
 var PianoRollView = (function (_super) {
     __extends(PianoRollView, _super);
     function PianoRollView() {
@@ -289,8 +288,8 @@ var PianoRollView = (function (_super) {
         });
     };
     PianoRollView.prototype.mouseMove = function (x, y) {
-        for (var i = 0; i < this.selectableThings.length; i++) {
-            var thing = this.selectableThings[i];
+        for (var _i = 0, _a = this.selectableThings; _i < _a.length; _i++) {
+            var thing = _a[_i];
             if (thing.hasSomethingToSelectAt(x, y)) {
                 thing.selectAt(x, y);
                 break;

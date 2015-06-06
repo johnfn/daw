@@ -158,9 +158,7 @@ class NoteViewModel extends Base implements ISelectableThing {
     var normalizedX = Math.floor(x / this.noteWidth);
     var normalizedY = Math.floor(y / this.noteHeight);
 
-    for (var i = 0; i < this.notes.length; i++) {
-      var note = this.notes[i];
-
+    for (var note of this.notes) {
       if (note.x == normalizedX && note.y == normalizedY) {
         return true;
       }
@@ -175,9 +173,7 @@ class NoteViewModel extends Base implements ISelectableThing {
 
     // Deselect any old selected note (TODO could be optimized)
 
-    for (var i = 0; i < this.notes.length; i++) {
-      var note = this.notes[i];
-
+    for (var note of this.notes) {
       if (note.uiState.selected) {
         note.uiState.selected = false;
       }
@@ -185,9 +181,7 @@ class NoteViewModel extends Base implements ISelectableThing {
 
     // Select new note
 
-    for (var i = 0; i < this.notes.length; i++) {
-      var note = this.notes[i];
-
+    for (var note of this.notes) {
       if (note.x == normalizedX && note.y == normalizedY) {
         note.uiState.selected = true;
 
@@ -247,9 +241,7 @@ class NoteView extends Base implements IDrawableThing {
 
     // Draw notes
 
-    for (var i = 0; i < model.notes.length; i++) {
-      var note: NoteModel = model.notes[i];
-
+    for (var note of model.notes) {
       if (note.uiState.selected) {
         context.fillStyle = "rgb(255, 100, 100)";
       } else {
@@ -259,13 +251,10 @@ class NoteView extends Base implements IDrawableThing {
       context.fillRect(model.noteWidth * note.x, model.noteHeight * note.y, model.noteWidth, model.noteHeight);
     }
   }
-
-
 }
 
 // TODO
 // * I should generalize ISelectableThing to IMouseableThing and add both click and select actions?
-// * Is there a better for loop
 
 class PianoRollView extends Base {
   private canvas: HTMLCanvasElement;
@@ -310,16 +299,13 @@ class PianoRollView extends Base {
   }
 
   private mouseMove(x: number, y: number) {
-    for (var i = 0; i < this.selectableThings.length; i++) {
-      var thing: ISelectableThing = this.selectableThings[i];
-
-      if (thing.hasSomethingToSelectAt(x, y)) {
+    for (var thing of this.selectableThings) {
+     if (thing.hasSomethingToSelectAt(x, y)) {
         thing.selectAt(x, y);
 
         break;
       }
     }
-
   }
 
   // TODO: Once I separate out the grid class, instead of using C.NoteBleh, put that onto the grid model
