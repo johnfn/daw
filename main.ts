@@ -83,15 +83,7 @@ class NoteModel extends Base {
 }
 
 class AllNotes extends Base {
-  private _list: NoteModel[] = [];
 
-  get list(): NoteModel[] { return this._list; }
-
-  public getNoteAt(x: number, y: number) {
-    for (var i = 0; i < this.list.length; i++) {
-
-    }
-  }
 }
 
 enum SelectionType {
@@ -156,7 +148,6 @@ class SelectionModel extends Base {
   set selectedGridY(value: number) { this._selectedGridY = value; }
 }
 
-
 class PianoRollModel extends Base {
   private _widthInNotes = 20;
 
@@ -183,9 +174,6 @@ class PianoRollModel extends Base {
   get selectionModel(): SelectionModel { return this._selectionModel; }
 }
 
-// TODO
-// * Since AllNotes is just a wrapper around an array, collapse it into this model.
-
 class NoteViewModel extends Base {
   private _noteWidth = C.NoteWidth;
 
@@ -197,11 +185,32 @@ class NoteViewModel extends Base {
   get noteHeight(): number { return this._noteHeight; }
   set noteHeight(value: number) { this._noteHeight = value; }
 
-  public notes: AllNotes = new AllNotes();
+  private _notes: NoteModel[] = [];
+
+  get notes(): NoteModel[] { return this._notes; }
 }
 
 class NoteView extends Base implements ISelectableThing, IDrawableThing {
   public model: NoteViewModel = new NoteViewModel();
+
+  constructor() {
+    super();
+
+    var note1 = new NoteModel();
+    note1.key = "A";
+    note1.octave = 0;
+    note1.length = 3;
+    note1.start = 2;
+
+    var note2 = new NoteModel();
+    note2.key = "B";
+    note2.octave = 0;
+    note2.length = 4;
+    note2.start = 3;
+
+    this.model.notes.push(note1);
+    this.model.notes.push(note2);
+  }
 
   //
   // IDrawableThing
@@ -212,8 +221,8 @@ class NoteView extends Base implements ISelectableThing, IDrawableThing {
 
     // Draw notes
 
-    for (var i = 0; i < model.notes.list.length; i++) {
-      var note: NoteModel = model.notes.list[i];
+    for (var i = 0; i < model.notes.length; i++) {
+      var note: NoteModel = model.notes[i];
 
       if (note.uiState.selected) {
         context.fillStyle = "rgb(255, 100, 100)";
@@ -239,8 +248,8 @@ class NoteView extends Base implements ISelectableThing, IDrawableThing {
     var normalizedX = Math.floor(x / model.noteWidth);
     var normalizedY = Math.floor(y / model.noteHeight);
 
-    for (var i = 0; i < this.model.notes.list.length; i++) {
-      var note = this.model.notes.list[i];
+    for (var i = 0; i < this.model.notes.length; i++) {
+      var note = this.model.notes[i];
 
       if (note.x == normalizedX && note.y == normalizedY) {
         return true;
@@ -258,8 +267,8 @@ class NoteView extends Base implements ISelectableThing, IDrawableThing {
 
     // Deselect any old selected note (TODO could be optimized)
 
-    for (var i = 0; i < this.model.notes.list.length; i++) {
-      var note = this.model.notes.list[i];
+    for (var i = 0; i < this.model.notes.length; i++) {
+      var note = this.model.notes[i];
 
       if (note.uiState.selected) {
         note.uiState.selected = false;
@@ -268,8 +277,8 @@ class NoteView extends Base implements ISelectableThing, IDrawableThing {
 
     // Select new note
 
-    for (var i = 0; i < this.model.notes.list.length; i++) {
-      var note = this.model.notes.list[i];
+    for (var i = 0; i < this.model.notes.length; i++) {
+      var note = this.model.notes[i];
 
       if (note.x == normalizedX && note.y == normalizedY) {
         note.uiState.selected = true;
@@ -333,21 +342,6 @@ class PianoRollView extends Base {
     this.context = <CanvasRenderingContext2D> this.canvas.getContext('2d');
 
     this.setUpCanvas();
-
-    var note1 = new NoteModel();
-    note1.key = "A";
-    note1.octave = 0;
-    note1.length = 3;
-    note1.start = 2;
-
-    var note2 = new NoteModel();
-    note2.key = "B";
-    note2.octave = 0;
-    note2.length = 4;
-    note2.start = 3;
-
-    noteView.model.notes.list.push(note1);
-    noteView.model.notes.list.push(note2);
 
     this.model.selectionModel.type = SelectionType.Grid;
     this.model.selectionModel.selectedGridX = 0;

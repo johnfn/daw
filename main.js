@@ -112,17 +112,7 @@ var AllNotes = (function (_super) {
     __extends(AllNotes, _super);
     function AllNotes() {
         _super.apply(this, arguments);
-        this._list = [];
     }
-    Object.defineProperty(AllNotes.prototype, "list", {
-        get: function () { return this._list; },
-        enumerable: true,
-        configurable: true
-    });
-    AllNotes.prototype.getNoteAt = function (x, y) {
-        for (var i = 0; i < this.list.length; i++) {
-        }
-    };
     return AllNotes;
 })(Base);
 var SelectionType;
@@ -208,15 +198,13 @@ var PianoRollModel = (function (_super) {
     });
     return PianoRollModel;
 })(Base);
-// TODO
-// * Since AllNotes is just a wrapper around an array, collapse it into this model.
 var NoteViewModel = (function (_super) {
     __extends(NoteViewModel, _super);
     function NoteViewModel() {
         _super.apply(this, arguments);
         this._noteWidth = C.NoteWidth;
         this._noteHeight = C.NoteHeight;
-        this.notes = new AllNotes();
+        this._notes = [];
     }
     Object.defineProperty(NoteViewModel.prototype, "noteWidth", {
         get: function () { return this._noteWidth; },
@@ -230,13 +218,30 @@ var NoteViewModel = (function (_super) {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(NoteViewModel.prototype, "notes", {
+        get: function () { return this._notes; },
+        enumerable: true,
+        configurable: true
+    });
     return NoteViewModel;
 })(Base);
 var NoteView = (function (_super) {
     __extends(NoteView, _super);
     function NoteView() {
-        _super.apply(this, arguments);
+        _super.call(this);
         this.model = new NoteViewModel();
+        var note1 = new NoteModel();
+        note1.key = "A";
+        note1.octave = 0;
+        note1.length = 3;
+        note1.start = 2;
+        var note2 = new NoteModel();
+        note2.key = "B";
+        note2.octave = 0;
+        note2.length = 4;
+        note2.start = 3;
+        this.model.notes.push(note1);
+        this.model.notes.push(note2);
     }
     //
     // IDrawableThing
@@ -244,8 +249,8 @@ var NoteView = (function (_super) {
     NoteView.prototype.render = function (context) {
         var model = this.model;
         // Draw notes
-        for (var i = 0; i < model.notes.list.length; i++) {
-            var note = model.notes.list[i];
+        for (var i = 0; i < model.notes.length; i++) {
+            var note = model.notes[i];
             if (note.uiState.selected) {
                 context.fillStyle = "rgb(255, 100, 100)";
             }
@@ -264,8 +269,8 @@ var NoteView = (function (_super) {
         var model = this.model;
         var normalizedX = Math.floor(x / model.noteWidth);
         var normalizedY = Math.floor(y / model.noteHeight);
-        for (var i = 0; i < this.model.notes.list.length; i++) {
-            var note = this.model.notes.list[i];
+        for (var i = 0; i < this.model.notes.length; i++) {
+            var note = this.model.notes[i];
             if (note.x == normalizedX && note.y == normalizedY) {
                 return true;
             }
@@ -277,15 +282,15 @@ var NoteView = (function (_super) {
         var normalizedX = Math.floor(x / model.noteWidth);
         var normalizedY = Math.floor(y / model.noteHeight);
         // Deselect any old selected note (TODO could be optimized)
-        for (var i = 0; i < this.model.notes.list.length; i++) {
-            var note = this.model.notes.list[i];
+        for (var i = 0; i < this.model.notes.length; i++) {
+            var note = this.model.notes[i];
             if (note.uiState.selected) {
                 note.uiState.selected = false;
             }
         }
         // Select new note
-        for (var i = 0; i < this.model.notes.list.length; i++) {
-            var note = this.model.notes.list[i];
+        for (var i = 0; i < this.model.notes.length; i++) {
+            var note = this.model.notes[i];
             if (note.x == normalizedX && note.y == normalizedY) {
                 note.uiState.selected = true;
                 break;
@@ -331,18 +336,6 @@ var PianoRollView = (function (_super) {
         this.canvas = document.getElementById("main");
         this.context = this.canvas.getContext('2d');
         this.setUpCanvas();
-        var note1 = new NoteModel();
-        note1.key = "A";
-        note1.octave = 0;
-        note1.length = 3;
-        note1.start = 2;
-        var note2 = new NoteModel();
-        note2.key = "B";
-        note2.octave = 0;
-        note2.length = 4;
-        note2.start = 3;
-        noteView.model.notes.list.push(note1);
-        noteView.model.notes.list.push(note2);
         this.model.selectionModel.type = SelectionType.Grid;
         this.model.selectionModel.selectedGridX = 0;
         this.model.selectionModel.selectedGridY = 0;
