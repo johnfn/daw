@@ -82,16 +82,6 @@ class NoteModel extends Base {
   }
 }
 
-class AllNotes extends Base {
-
-}
-
-enum SelectionType {
-  Note,
-  Grid,
-  None
-};
-
 interface IDrawableThing {
   render(context: CanvasRenderingContext2D): void;
 }
@@ -117,37 +107,6 @@ interface ISelectableThing {
   register(): void;
 }
 
-class SelectionModel extends Base {
-  private _type = SelectionType.None;
-
-  get type(): SelectionType { return this._type; }
-  set type(value: SelectionType) { this._type = value; }
-
-  private _selectedNote: NoteModel;
-
-  /**
-    If selectionTarget == Note, then this will be the selected note.
-  */
-  get selectedNote(): NoteModel { return this._selectedNote; }
-  set selectedNote(value: NoteModel) { this._selectedNote = value; }
-
-  /**
-    If selectionTarget == Grid, then this will be the x position of the selected grid cell.
-  */
-  private _selectedGridX: number;
-
-  get selectedGridX(): number { return this._selectedGridX; }
-  set selectedGridX(value: number) { this._selectedGridX = value; }
-
-  /**
-    If selectionTarget == Grid, then this will be the y position of the selected grid cell.
-  */
-  private _selectedGridY: number;
-
-  get selectedGridY(): number { return this._selectedGridY; }
-  set selectedGridY(value: number) { this._selectedGridY = value; }
-}
-
 class PianoRollModel extends Base {
   private _widthInNotes = 20;
 
@@ -168,10 +127,6 @@ class PianoRollModel extends Base {
 
   get canvasHeight(): number { return this._canvasHeight; }
   set canvasHeight(value: number) { this._canvasHeight = value; }
-
-  private _selectionModel = new SelectionModel();
-
-  get selectionModel(): SelectionModel { return this._selectionModel; }
 }
 
 class NoteViewModel extends Base {
@@ -309,11 +264,6 @@ class NoteView extends Base implements ISelectableThing, IDrawableThing {
 }
 
 // TODO
-// * Pull out the note stuff into a NoteView subclass. This should just be some sort of parent and event dispatcher guy.
-//   * [this] should be changed
-//   * isSelected should be moved (internal selection state) preferrably onto the model...
-//     * does isSelected even matter? Kinda?
-//   * Remove the selectionModel from the model entirely.
 // * ISelectableThing should be implemented on the Model rather than the View.
 // * Drawing note stuff should also be moved onto that class.
 // * I should generalize ISelectableThing to IMouseableThing and add both click and select actions?
@@ -342,10 +292,6 @@ class PianoRollView extends Base {
     this.context = <CanvasRenderingContext2D> this.canvas.getContext('2d');
 
     this.setUpCanvas();
-
-    this.model.selectionModel.type = SelectionType.Grid;
-    this.model.selectionModel.selectedGridX = 0;
-    this.model.selectionModel.selectedGridY = 0;
 
     window.requestAnimationFrame(this.render);
   }
@@ -381,7 +327,6 @@ class PianoRollView extends Base {
   // TODO: Once I separate out the grid class, instead of using C.NoteBleh, put that onto the grid model
   private render() {
     var model = this.model;
-    var selection = this.model.selectionModel;
 
     this.context.clearRect(0, 0, this.model.canvasWidth, this.model.canvasHeight);
 
@@ -391,11 +336,6 @@ class PianoRollView extends Base {
       for (var j = 0; j < model.heightInNotes; j++) {
         this.context.strokeRect(i * C.NoteWidth, j * C.NoteHeight, C.NoteWidth, C.NoteHeight);
       }
-    }
-
-    if (selection.type == SelectionType.Grid) {
-      this.context.fillStyle = "rgb(230, 230, 230)";
-      this.context.fillRect(C.NoteWidth * selection.selectedGridX, C.NoteHeight * selection.selectedGridY, C.NoteWidth, C.NoteHeight);
     }
 
     // Draw note descriptions

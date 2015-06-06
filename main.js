@@ -108,55 +108,6 @@ var NoteModel = (function (_super) {
     };
     return NoteModel;
 })(Base);
-var AllNotes = (function (_super) {
-    __extends(AllNotes, _super);
-    function AllNotes() {
-        _super.apply(this, arguments);
-    }
-    return AllNotes;
-})(Base);
-var SelectionType;
-(function (SelectionType) {
-    SelectionType[SelectionType["Note"] = 0] = "Note";
-    SelectionType[SelectionType["Grid"] = 1] = "Grid";
-    SelectionType[SelectionType["None"] = 2] = "None";
-})(SelectionType || (SelectionType = {}));
-;
-var SelectionModel = (function (_super) {
-    __extends(SelectionModel, _super);
-    function SelectionModel() {
-        _super.apply(this, arguments);
-        this._type = SelectionType.None;
-    }
-    Object.defineProperty(SelectionModel.prototype, "type", {
-        get: function () { return this._type; },
-        set: function (value) { this._type = value; },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(SelectionModel.prototype, "selectedNote", {
-        /**
-          If selectionTarget == Note, then this will be the selected note.
-        */
-        get: function () { return this._selectedNote; },
-        set: function (value) { this._selectedNote = value; },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(SelectionModel.prototype, "selectedGridX", {
-        get: function () { return this._selectedGridX; },
-        set: function (value) { this._selectedGridX = value; },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(SelectionModel.prototype, "selectedGridY", {
-        get: function () { return this._selectedGridY; },
-        set: function (value) { this._selectedGridY = value; },
-        enumerable: true,
-        configurable: true
-    });
-    return SelectionModel;
-})(Base);
 var PianoRollModel = (function (_super) {
     __extends(PianoRollModel, _super);
     function PianoRollModel() {
@@ -165,7 +116,6 @@ var PianoRollModel = (function (_super) {
         this._heightInNotes = 20;
         this._canvasWidth = 600;
         this._canvasHeight = 600;
-        this._selectionModel = new SelectionModel();
     }
     Object.defineProperty(PianoRollModel.prototype, "widthInNotes", {
         get: function () { return this._widthInNotes; },
@@ -188,11 +138,6 @@ var PianoRollModel = (function (_super) {
     Object.defineProperty(PianoRollModel.prototype, "canvasHeight", {
         get: function () { return this._canvasHeight; },
         set: function (value) { this._canvasHeight = value; },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(PianoRollModel.prototype, "selectionModel", {
-        get: function () { return this._selectionModel; },
         enumerable: true,
         configurable: true
     });
@@ -316,11 +261,6 @@ var NoteView = (function (_super) {
     return NoteView;
 })(Base);
 // TODO
-// * Pull out the note stuff into a NoteView subclass. This should just be some sort of parent and event dispatcher guy.
-//   * [this] should be changed
-//   * isSelected should be moved (internal selection state) preferrably onto the model...
-//     * does isSelected even matter? Kinda?
-//   * Remove the selectionModel from the model entirely.
 // * ISelectableThing should be implemented on the Model rather than the View.
 // * Drawing note stuff should also be moved onto that class.
 // * I should generalize ISelectableThing to IMouseableThing and add both click and select actions?
@@ -336,9 +276,6 @@ var PianoRollView = (function (_super) {
         this.canvas = document.getElementById("main");
         this.context = this.canvas.getContext('2d');
         this.setUpCanvas();
-        this.model.selectionModel.type = SelectionType.Grid;
-        this.model.selectionModel.selectedGridX = 0;
-        this.model.selectionModel.selectedGridY = 0;
         window.requestAnimationFrame(this.render);
     }
     PianoRollView.prototype.getItemAtPoint = function (x, y) {
@@ -365,17 +302,12 @@ var PianoRollView = (function (_super) {
     // TODO: Once I separate out the grid class, instead of using C.NoteBleh, put that onto the grid model
     PianoRollView.prototype.render = function () {
         var model = this.model;
-        var selection = this.model.selectionModel;
         this.context.clearRect(0, 0, this.model.canvasWidth, this.model.canvasHeight);
         // Draw grid
         for (var i = 0; i < model.widthInNotes; i++) {
             for (var j = 0; j < model.heightInNotes; j++) {
                 this.context.strokeRect(i * C.NoteWidth, j * C.NoteHeight, C.NoteWidth, C.NoteHeight);
             }
-        }
-        if (selection.type == SelectionType.Grid) {
-            this.context.fillStyle = "rgb(230, 230, 230)";
-            this.context.fillRect(C.NoteWidth * selection.selectedGridX, C.NoteHeight * selection.selectedGridY, C.NoteWidth, C.NoteHeight);
         }
         // Draw note descriptions
         var noteNames = NoteModel.getAllNotes();
