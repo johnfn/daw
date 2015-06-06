@@ -148,6 +148,10 @@ class NoteViewModel extends Base implements ISelectableThing {
 
   get notes(): NoteModel[] { return this._notes; }
 
+  get selectedNotes(): NoteModel[] {
+    return this.notes.filter(note => note.uiState.selected);
+  }
+
   /**
     Returns the note at (x, y) (normalized to grid positions) or undefined
     if there isn't one.
@@ -169,19 +173,17 @@ class NoteViewModel extends Base implements ISelectableThing {
   // ISelectableThing
   //
 
-  // TODO: Decompose out a "get note @ (x, y)"
-
   hasSomethingToSelectAt(x: number, y: number): boolean {
     return this.getNoteAt(x, y).hasValue;
   }
 
   selectAt(x: number, y: number): void {
-    // Deselect any old selected note (TODO could be optimized)
+    // Deselect any old selected note(s)
 
-    for (var n of this.notes) {
-      if (n.uiState.selected) {
-        n.uiState.selected = false;
-      }
+    var notes = this.selectedNotes;
+
+    for (var n of notes) {
+      n.uiState.selected = false;
     }
 
     // Select new note
@@ -204,7 +206,8 @@ class NoteViewModel extends Base implements ISelectableThing {
     return 0;
   }
 
-  // NOTE this is wrong
+  // NOTE this is the wrong abstraction.
+
   /**
     Register this as a selectable thing. Necessary if you want it to actually be selected...
   */

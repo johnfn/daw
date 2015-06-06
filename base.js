@@ -61,6 +61,7 @@ var Base = (function () {
         }
         return names.join("#");
     };
+    // TODO: Rename this.
     Base.prototype.isNetworkProperty = function (proto, name) {
         var pd = Object.getOwnPropertyDescriptor(proto, name);
         return pd != undefined && pd.get != undefined;

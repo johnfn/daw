@@ -170,6 +170,13 @@ var NoteViewModel = (function (_super) {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(NoteViewModel.prototype, "selectedNotes", {
+        get: function () {
+            return this.notes.filter(function (note) { return note.uiState.selected; });
+        },
+        enumerable: true,
+        configurable: true
+    });
     /**
       Returns the note at (x, y) (normalized to grid positions) or undefined
       if there isn't one.
@@ -188,17 +195,15 @@ var NoteViewModel = (function (_super) {
     //
     // ISelectableThing
     //
-    // TODO: Decompose out a "get note @ (x, y)"
     NoteViewModel.prototype.hasSomethingToSelectAt = function (x, y) {
         return this.getNoteAt(x, y).hasValue;
     };
     NoteViewModel.prototype.selectAt = function (x, y) {
-        // Deselect any old selected note (TODO could be optimized)
-        for (var _i = 0, _a = this.notes; _i < _a.length; _i++) {
-            var n = _a[_i];
-            if (n.uiState.selected) {
-                n.uiState.selected = false;
-            }
+        // Deselect any old selected note(s)
+        var notes = this.selectedNotes;
+        for (var _i = 0; _i < notes.length; _i++) {
+            var n = notes[_i];
+            n.uiState.selected = false;
         }
         // Select new note
         var note = this.getNoteAt(x, y);
@@ -215,7 +220,7 @@ var NoteViewModel = (function (_super) {
     NoteViewModel.prototype.depth = function () {
         return 0;
     };
-    // NOTE this is wrong
+    // NOTE this is the wrong abstraction.
     /**
       Register this as a selectable thing. Necessary if you want it to actually be selected...
     */

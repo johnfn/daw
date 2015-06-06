@@ -77,6 +77,7 @@ class Base {
     return names.join("#");
   }
 
+  // TODO: Rename this.
   private isNetworkProperty(proto: any, name: string): boolean {
     var pd: PropertyDescriptor = Object.getOwnPropertyDescriptor(proto, name);
 
@@ -132,7 +133,7 @@ class Base {
     var fns: any[] = [];
 
     for (var prop in this) {
-      if (isFunction(this[prop]) && !(prop in Base.prototype)) {
+      if (!this.isNetworkProperty(Object.getPrototypeOf(this), prop) && isFunction(this[prop]) && !(prop in Base.prototype)) {
         fns.push(prop);
       }
     }
