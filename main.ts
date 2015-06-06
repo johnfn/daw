@@ -189,10 +189,15 @@ class PianoRollModel extends Base {
 }
 
 
-//
+// TODO
 // * Pull out the note stuff into a NoteView subclass. This should just be some sort of parent and event dispatcher guy.
+//   * [this] should be changed
+//   * isSelected should be moved (internal selection state) preferrably onto the model...
+//     * does isSelected even matter? Kinda?
+// * ISelectableThing should be implemented on the Model rather than the View.
 // * Drawing note stuff should also be moved onto that class.
-//
+// * I should generalize ISelectableThing to IMouseableThing and add both click and select actions?
+// * Is there a better for loop
 
 class PianoRollView extends Base implements ISelectableThing {
   private canvas: HTMLCanvasElement;
@@ -200,8 +205,14 @@ class PianoRollView extends Base implements ISelectableThing {
 
   private model: PianoRollModel;
 
+  private selectableThings: ISelectableThing[];
+
+  private isSelected: boolean = false;
+
   constructor() {
     super();
+
+    this.selectableThings = [this];
 
     this.model = new PianoRollModel();
 
@@ -248,18 +259,17 @@ class PianoRollView extends Base implements ISelectableThing {
   }
 
   private mouseMove(x: number, y: number) {
-    var model = this.model;
 
-    /*
-    var selection = this.model.selectionModel;
+    for (var i = 0; i < this.selectableThings.length; i++) {
+      var thing: ISelectableThing = this.selectableThings[i];
 
-    selection.type = SelectionType.Grid;
+      if (thing.hasSomethingToSelectAt(x, y)) {
+        this.selectAt(x, y);
 
-    selection.selectedGridX = Math.floor(x / model.noteWidth);
-    selection.selectedGridY = Math.floor(y / model.noteHeight);
-    */
+        break;
+      }
+    }
 
-    console.log(this.hasSomethingToSelectAt(x, y));
   }
 
   private render() {
@@ -275,8 +285,6 @@ class PianoRollView extends Base implements ISelectableThing {
         this.context.strokeRect(i * model.noteWidth, j * model.noteHeight, model.noteWidth, model.noteHeight);
       }
     }
-
-    // Draw selection if necessary
 
     if (selection.type == SelectionType.Grid) {
       this.context.fillStyle = "rgb(230, 230, 230)";
@@ -296,7 +304,12 @@ class PianoRollView extends Base implements ISelectableThing {
     for (var i = 0; i < model.notes.list.length; i++) {
       var note: NoteModel = model.notes.list[i];
 
-      this.context.fillStyle = "rgb(255, 0, 0)";
+      if (note.uiState.selected) {
+        this.context.fillStyle = "rgb(255, 100, 100)";
+      } else {
+        this.context.fillStyle = "rgb(255, 0, 0)";
+      }
+
       this.context.fillRect(model.noteWidth * note.x, model.noteHeight * note.y, model.noteWidth, model.noteHeight);
     }
 
@@ -308,8 +321,8 @@ class PianoRollView extends Base implements ISelectableThing {
   //
 
   // TODO: should be moved into a note-specific subclass
+    // TODO: Decompose out a "find note w/ (x, y)"
   // TODO: should consider note start and end positions
-  // TODO: Should change F12 to Cmd + y
 
   hasSomethingToSelectAt(x: number, y: number): boolean {
     var model = this.model;
@@ -320,9 +333,6 @@ class PianoRollView extends Base implements ISelectableThing {
     for (var i = 0; i < this.model.notes.list.length; i++) {
       var note = this.model.notes.list[i];
 
-      console.log(`x ${note.x} y ${note.y}`);
-      console.log(`Normalized: x ${normalizedX} y ${normalizedY}`);
-
       if (note.x == normalizedX && note.y == normalizedY) {
         return true;
       }
@@ -332,7 +342,33 @@ class PianoRollView extends Base implements ISelectableThing {
   }
 
   selectAt(x: number, y: number): void {
-    console.warn("Stub");
+    var model = this.model;
+
+    var normalizedX = Math.floor(x / model.noteWidth);
+    var normalizedY = Math.floor(y / model.noteHeight);
+
+    // Deselect any old selected note (could be optimized)
+
+    for (var i = 0; i < this.model.notes.list.length; i++) {
+      var note = this.model.notes.list[i];
+
+      if (note.uiState.selected) {
+        note.uiState.selected = false;
+      }
+    }
+
+    // Select new note
+
+    for (var i = 0; i < this.model.notes.list.length; i++) {
+      var note = this.model.notes.list[i];
+
+      if (note.x == normalizedX && note.y == normalizedY) {
+        note.uiState.selected = true;
+        this.isSelected = true;
+
+        break;
+      }
+    }
   }
 
   deselect(): void {
@@ -356,10 +392,6 @@ class PianoRollView extends Base implements ISelectableThing {
 }
 
 var test: PianoRollModel = new PianoRollModel();
-
-test.listenTo(test, 'change', () => {
-  console.log('woo');
-});
 
 test.widthInNotes = 55;
 
