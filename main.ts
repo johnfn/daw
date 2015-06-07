@@ -1,8 +1,9 @@
 /// <reference path="references.d.ts" />
 
 // TODO
-//   * Separate out grid from MainView and make that selectable, too.
-
+// * autoprop stuff:
+//   * for stuff like key... some sort of set() validator?
+// * Separate out grid from MainView and make that selectable, too.
 
 class C {
   public static NoteWidth = 40;
@@ -10,26 +11,15 @@ class C {
 }
 
 class NoteUIState extends Base {
-  private _selected = false;
-
-  get selected(): boolean { return this._selected; }
-  set selected(value: boolean) { this._selected = value; }
+  @prop selected = false;
 }
 
 class NoteModel extends Base {
-  private _uiState = new NoteUIState();
+  @prop uiState = new NoteUIState();
 
-  get uiState(): NoteUIState { return this._uiState; }
-
-  private _length = 0;
-
-  get length(): number { return this._length; }
-  set length(value: number) { this._length = value; }
-
-  private _start = 0;
-
-  get start(): number { return this._start; }
-  set start(value: number) { this._start = value; }
+  @prop length = 0;
+  @prop start = 0;
+  @prop octave = 4;
 
   private _key = "A";
 
@@ -44,24 +34,14 @@ class NoteModel extends Base {
     this._key = value;
   }
 
-  private _octave = 4;
-
-  get octave(): number { return this._octave; }
-  set octave(value: number) { this._octave = value; }
-
   get x(): number { return this.start; }
+  get y(): number { return this.octave * NoteModel.keysInOctave.length + NoteModel.keysInOctave.indexOf(this.key); }
 
-  get y(): number {
-    return this.octave * NoteModel.keysInOctave().length + NoteModel.keysInOctave().indexOf(this.key);
-  }
-
-  public static keysInOctave(): string[] {
-    return ["A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#"];
-  }
+  public static keysInOctave: string[] = ["A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#"];
 
   public static getAllNotes(): string[] {
     var result:string[] = [];
-    var keys = NoteModel.keysInOctave();
+    var keys = NoteModel.keysInOctave;
 
     for (var i = 1; i < 8; i++) {
       for (var j = 0; j < keys.length; j++) {
@@ -76,7 +56,7 @@ class NoteModel extends Base {
     Validate that `key` is actually a real key. No flats sorry.
   */
   private validateKey(key: string): boolean {
-    return NoteModel.keysInOctave().indexOf(key.toUpperCase()) !== -1;
+    return NoteModel.keysInOctave.indexOf(key.toUpperCase()) !== -1;
   }
 
   private validateOctave(octave: number): boolean {
@@ -112,41 +92,18 @@ interface ISelectableThing {
 }
 
 class PianoRollModel extends Base {
-  private _widthInNotes = 20;
+  @prop widthInNotes = 20;
+  @prop heightInNotes = 20;
 
-  get widthInNotes(): number { return this._widthInNotes; }
-  set widthInNotes(value: number) { this._widthInNotes = value; }
-
-  private _heightInNotes = 20;
-
-  get heightInNotes(): number { return this._heightInNotes; }
-  set heightInNotes(value: number) { this._heightInNotes = value; }
-
-  private _canvasWidth = 600;
-
-  get canvasWidth(): number { return this._canvasWidth; }
-  set canvasWidth(value: number) { this._canvasWidth = value; }
-
-  private _canvasHeight = 600;
-
-  get canvasHeight(): number { return this._canvasHeight; }
-  set canvasHeight(value: number) { this._canvasHeight = value; }
+  @prop canvasWidth = 600;
+  @prop canvasHeight = 600;
 }
 
 class NoteViewModel extends Base implements ISelectableThing {
-  private _noteWidth = C.NoteWidth;
+  @prop noteWidth = C.NoteWidth;
+  @prop noteHeight = C.NoteHeight;
 
-  get noteWidth(): number { return this._noteWidth; }
-  set noteWidth(value: number) { this._noteWidth = value; }
-
-  private _noteHeight = C.NoteHeight;
-
-  get noteHeight(): number { return this._noteHeight; }
-  set noteHeight(value: number) { this._noteHeight = value; }
-
-  private _notes: NoteModel[] = [];
-
-  get notes(): NoteModel[] { return this._notes; }
+  @prop notes: NoteModel[] = [];
 
   get selectedNotes(): NoteModel[] {
     return this.notes.filter(note => note.uiState.selected);

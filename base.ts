@@ -2,6 +2,15 @@ interface EventCB { (...attrs: any[]): any };
 
 var fileCache: { [key: string]: string } = {};
 
+function prop(target: Object, name: string) {
+  Object.defineProperty(target, name, {
+    get: function() { return this["_" + name]; },
+    set: function(value) { this["_" + name] = value; },
+    enumerable: true,
+    configurable: true
+  });
+}
+
 function filter<T>(list: T[], callback: (t: T) => boolean): T[] {
   var result: T[] = [];
   var len = list.length;

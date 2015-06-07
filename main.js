@@ -5,8 +5,21 @@ var __extends = this.__extends || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
+if (typeof __decorate !== "function") __decorate = function (decorators, target, key, desc) {
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") return Reflect.decorate(decorators, target, key, desc);
+    switch (arguments.length) {
+        case 2: return decorators.reduceRight(function(o, d) { return (d && d(o)) || o; }, target);
+        case 3: return decorators.reduceRight(function(o, d) { return (d && d(target, key)), void 0; }, void 0);
+        case 4: return decorators.reduceRight(function(o, d) { return (d && d(target, key, o)) || o; }, desc);
+    }
+};
+if (typeof __metadata !== "function") __metadata = function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
 // TODO
-//   * Separate out grid from MainView and make that selectable, too.
+// * autoprop stuff:
+//   * for stuff like key... some sort of set() validator?
+// * Separate out grid from MainView and make that selectable, too.
 var C = (function () {
     function C() {
     }
@@ -18,43 +31,24 @@ var NoteUIState = (function (_super) {
     __extends(NoteUIState, _super);
     function NoteUIState() {
         _super.apply(this, arguments);
-        this._selected = false;
+        this.selected = false;
     }
-    Object.defineProperty(NoteUIState.prototype, "selected", {
-        get: function () { return this._selected; },
-        set: function (value) { this._selected = value; },
-        enumerable: true,
-        configurable: true
-    });
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], NoteUIState.prototype, "selected");
     return NoteUIState;
 })(Base);
 var NoteModel = (function (_super) {
     __extends(NoteModel, _super);
     function NoteModel() {
         _super.apply(this, arguments);
-        this._uiState = new NoteUIState();
-        this._length = 0;
-        this._start = 0;
+        this.uiState = new NoteUIState();
+        this.length = 0;
+        this.start = 0;
+        this.octave = 4;
         this._key = "A";
-        this._octave = 4;
     }
-    Object.defineProperty(NoteModel.prototype, "uiState", {
-        get: function () { return this._uiState; },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(NoteModel.prototype, "length", {
-        get: function () { return this._length; },
-        set: function (value) { this._length = value; },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(NoteModel.prototype, "start", {
-        get: function () { return this._start; },
-        set: function (value) { this._start = value; },
-        enumerable: true,
-        configurable: true
-    });
     Object.defineProperty(NoteModel.prototype, "key", {
         get: function () { return this._key; },
         set: function (value) {
@@ -67,30 +61,19 @@ var NoteModel = (function (_super) {
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(NoteModel.prototype, "octave", {
-        get: function () { return this._octave; },
-        set: function (value) { this._octave = value; },
-        enumerable: true,
-        configurable: true
-    });
     Object.defineProperty(NoteModel.prototype, "x", {
         get: function () { return this.start; },
         enumerable: true,
         configurable: true
     });
     Object.defineProperty(NoteModel.prototype, "y", {
-        get: function () {
-            return this.octave * NoteModel.keysInOctave().length + NoteModel.keysInOctave().indexOf(this.key);
-        },
+        get: function () { return this.octave * NoteModel.keysInOctave.length + NoteModel.keysInOctave.indexOf(this.key); },
         enumerable: true,
         configurable: true
     });
-    NoteModel.keysInOctave = function () {
-        return ["A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#"];
-    };
     NoteModel.getAllNotes = function () {
         var result = [];
-        var keys = NoteModel.keysInOctave();
+        var keys = NoteModel.keysInOctave;
         for (var i = 1; i < 8; i++) {
             for (var j = 0; j < keys.length; j++) {
                 result.push("" + keys[j] + i);
@@ -102,74 +85,66 @@ var NoteModel = (function (_super) {
       Validate that `key` is actually a real key. No flats sorry.
     */
     NoteModel.prototype.validateKey = function (key) {
-        return NoteModel.keysInOctave().indexOf(key.toUpperCase()) !== -1;
+        return NoteModel.keysInOctave.indexOf(key.toUpperCase()) !== -1;
     };
     NoteModel.prototype.validateOctave = function (octave) {
         // TODO
         return true;
     };
+    NoteModel.keysInOctave = ["A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#"];
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], NoteModel.prototype, "uiState");
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], NoteModel.prototype, "length");
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], NoteModel.prototype, "start");
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], NoteModel.prototype, "octave");
     return NoteModel;
 })(Base);
 var PianoRollModel = (function (_super) {
     __extends(PianoRollModel, _super);
     function PianoRollModel() {
         _super.apply(this, arguments);
-        this._widthInNotes = 20;
-        this._heightInNotes = 20;
-        this._canvasWidth = 600;
-        this._canvasHeight = 600;
+        this.widthInNotes = 20;
+        this.heightInNotes = 20;
+        this.canvasWidth = 600;
+        this.canvasHeight = 600;
     }
-    Object.defineProperty(PianoRollModel.prototype, "widthInNotes", {
-        get: function () { return this._widthInNotes; },
-        set: function (value) { this._widthInNotes = value; },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(PianoRollModel.prototype, "heightInNotes", {
-        get: function () { return this._heightInNotes; },
-        set: function (value) { this._heightInNotes = value; },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(PianoRollModel.prototype, "canvasWidth", {
-        get: function () { return this._canvasWidth; },
-        set: function (value) { this._canvasWidth = value; },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(PianoRollModel.prototype, "canvasHeight", {
-        get: function () { return this._canvasHeight; },
-        set: function (value) { this._canvasHeight = value; },
-        enumerable: true,
-        configurable: true
-    });
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], PianoRollModel.prototype, "widthInNotes");
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], PianoRollModel.prototype, "heightInNotes");
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], PianoRollModel.prototype, "canvasWidth");
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], PianoRollModel.prototype, "canvasHeight");
     return PianoRollModel;
 })(Base);
 var NoteViewModel = (function (_super) {
     __extends(NoteViewModel, _super);
     function NoteViewModel() {
         _super.apply(this, arguments);
-        this._noteWidth = C.NoteWidth;
-        this._noteHeight = C.NoteHeight;
-        this._notes = [];
+        this.noteWidth = C.NoteWidth;
+        this.noteHeight = C.NoteHeight;
+        this.notes = [];
     }
-    Object.defineProperty(NoteViewModel.prototype, "noteWidth", {
-        get: function () { return this._noteWidth; },
-        set: function (value) { this._noteWidth = value; },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(NoteViewModel.prototype, "noteHeight", {
-        get: function () { return this._noteHeight; },
-        set: function (value) { this._noteHeight = value; },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(NoteViewModel.prototype, "notes", {
-        get: function () { return this._notes; },
-        enumerable: true,
-        configurable: true
-    });
     Object.defineProperty(NoteViewModel.prototype, "selectedNotes", {
         get: function () {
             return this.notes.filter(function (note) { return note.uiState.selected; });
@@ -227,6 +202,18 @@ var NoteViewModel = (function (_super) {
     NoteViewModel.prototype.register = function () {
         console.warn("stub");
     };
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], NoteViewModel.prototype, "noteWidth");
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], NoteViewModel.prototype, "noteHeight");
+    __decorate([
+        prop, 
+        __metadata('design:type', Array)
+    ], NoteViewModel.prototype, "notes");
     return NoteViewModel;
 })(Base);
 var NoteView = (function (_super) {
