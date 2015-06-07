@@ -1,7 +1,6 @@
 /// <reference path="references.d.ts" />
 
 // TODO
-// * Rename selectable to hoverable
 // * Add an actual ISelectable
 // * Some sort of Math.flooring x/y normalizer
 // * Separate out note description sidebar and make that selectable, maybe?
@@ -19,6 +18,7 @@ class Depths {
 
 class NoteUIState extends Base {
   @prop selected = false;
+  @prop clicked = false;
 }
 
 class NoteModel extends Base {
@@ -81,16 +81,30 @@ interface IHoverable {
   depth: number;
 }
 
+interface IClickable {
+  hasSomethingToClickAt(x: number, y: number): boolean;
+
+  click(x: number, y: number): void;
+
+  removeFocus(): void;
+
+  depth: number;
+}
+
 class PianoRollModel extends Base {
   @prop canvasWidth = 600;
   @prop canvasHeight = 600;
 }
 
-class NoteViewModel extends Base implements IHoverable {
+class NoteViewModel extends Base implements IHoverable, IClickable {
   @prop notes: NoteModel[] = [];
 
-  get selectedNotes(): NoteModel[] {
+  get hoveredNotes(): NoteModel[] {
     return this.notes.filter(note => note.uiState.selected);
+  }
+
+  get clickedNotes(): NoteModel[] {
+    return this.notes.filter(note => note.uiState.clicked);
   }
 
   /**
@@ -111,11 +125,11 @@ class NoteViewModel extends Base implements IHoverable {
   }
 
   private deselectAllNotes(): void {
-    var notes = this.selectedNotes;
+    this.hoveredNotes.map(note => note.uiState.selected = false);
+  }
 
-    for (var n of notes) {
-      n.uiState.selected = false;
-    }
+  private unclickAllNotes(): void {
+    this.clickedNotes.map(note => note.uiState.clicked = false);
   }
 
   //
@@ -145,6 +159,26 @@ class NoteViewModel extends Base implements IHoverable {
   }
 
   depth = Depths.NoteDepth;
+
+  //
+  // IClickable
+  //
+
+  hasSomethingToClickAt(x: number, y: number): boolean {
+    return this.getNoteAt(x, y).hasValue;
+  }
+
+  click(x: number, y: number): void {
+    var note = this.getNoteAt(x, y);
+
+    if (note.hasValue) {
+      note.value.uiState.clicked = true;
+    }
+  }
+
+  removeFocus(): void {
+
+  }
 }
 
 class NoteView extends Base implements IRenderable {
@@ -181,6 +215,8 @@ class NoteView extends Base implements IRenderable {
     for (var note of model.notes) {
       if (note.uiState.selected) {
         context.fillStyle = "rgb(255, 100, 100)";
+      } else if (note.uiState.clicked) {
+        context.fillStyle = "rgb(255, 200, 200)";
       } else {
         context.fillStyle = "rgb(255, 0, 0)";
       }

@@ -17,7 +17,6 @@ if (typeof __metadata !== "function") __metadata = function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 // TODO
-// * Rename selectable to hoverable
 // * Add an actual ISelectable
 // * Some sort of Math.flooring x/y normalizer
 // * Separate out note description sidebar and make that selectable, maybe?
@@ -41,11 +40,16 @@ var NoteUIState = (function (_super) {
     function NoteUIState() {
         _super.apply(this, arguments);
         this.selected = false;
+        this.clicked = false;
     }
     __decorate([
         prop, 
         __metadata('design:type', Object)
     ], NoteUIState.prototype, "selected");
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], NoteUIState.prototype, "clicked");
     return NoteUIState;
 })(Base);
 var NoteModel = (function (_super) {
@@ -135,9 +139,16 @@ var NoteViewModel = (function (_super) {
         this.notes = [];
         this.depth = Depths.NoteDepth;
     }
-    Object.defineProperty(NoteViewModel.prototype, "selectedNotes", {
+    Object.defineProperty(NoteViewModel.prototype, "hoveredNotes", {
         get: function () {
             return this.notes.filter(function (note) { return note.uiState.selected; });
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(NoteViewModel.prototype, "clickedNotes", {
+        get: function () {
+            return this.notes.filter(function (note) { return note.uiState.clicked; });
         },
         enumerable: true,
         configurable: true
@@ -158,11 +169,10 @@ var NoteViewModel = (function (_super) {
         return new Maybe();
     };
     NoteViewModel.prototype.deselectAllNotes = function () {
-        var notes = this.selectedNotes;
-        for (var _i = 0; _i < notes.length; _i++) {
-            var n = notes[_i];
-            n.uiState.selected = false;
-        }
+        this.hoveredNotes.map(function (note) { return note.uiState.selected = false; });
+    };
+    NoteViewModel.prototype.unclickAllNotes = function () {
+        this.clickedNotes.map(function (note) { return note.uiState.clicked = false; });
     };
     //
     // ISelectableThing
@@ -181,6 +191,20 @@ var NoteViewModel = (function (_super) {
     };
     NoteViewModel.prototype.unhover = function () {
         this.deselectAllNotes();
+    };
+    //
+    // IClickable
+    //
+    NoteViewModel.prototype.hasSomethingToClickAt = function (x, y) {
+        return this.getNoteAt(x, y).hasValue;
+    };
+    NoteViewModel.prototype.click = function (x, y) {
+        var note = this.getNoteAt(x, y);
+        if (note.hasValue) {
+            note.value.uiState.clicked = true;
+        }
+    };
+    NoteViewModel.prototype.removeFocus = function () {
     };
     __decorate([
         prop, 
@@ -216,6 +240,9 @@ var NoteView = (function (_super) {
             var note = _a[_i];
             if (note.uiState.selected) {
                 context.fillStyle = "rgb(255, 100, 100)";
+            }
+            else if (note.uiState.clicked) {
+                context.fillStyle = "rgb(255, 200, 200)";
             }
             else {
                 context.fillStyle = "rgb(255, 0, 0)";
