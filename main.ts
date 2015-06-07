@@ -1,9 +1,10 @@
 /// <reference path="references.d.ts" />
 
 // TODO
-// * autoprop stuff:
-//   * for stuff like key... some sort of set() validator?
-// * Separate out grid from MainView and make that selectable, too.
+// * Separate out grid from MainView
+// * and make that selectable, too.
+// * Separate out note description sidebar and make that selectable, maybe?
+// * Start moving stuff into different files.
 
 class C {
   public static NoteWidth = 40;
@@ -82,9 +83,6 @@ interface ISelectableThing {
 }
 
 class PianoRollModel extends Base {
-  @prop widthInNotes = 20;
-  @prop heightInNotes = 20;
-
   @prop canvasWidth = 600;
   @prop canvasHeight = 600;
 }
@@ -206,6 +204,31 @@ class NoteView extends Base implements IDrawableThing {
   }
 }
 
+class GridModel extends Base {
+  @prop widthInNotes = 40;
+  @prop heightInNotes = 20;
+}
+
+class GridView extends Base implements IDrawableThing {
+  private model = new GridModel();
+
+  //
+  // IDrawableThing
+  //
+
+  public render(context: CanvasRenderingContext2D): void {
+    var model = this.model;
+
+    // Draw grid
+
+    for (var i = 0; i < model.widthInNotes; i++) {
+      for (var j = 0; j < model.heightInNotes; j++) {
+        context.strokeRect(i * C.NoteWidth, j * C.NoteHeight, C.NoteWidth, C.NoteHeight);
+      }
+    }
+  }
+}
+
 // TODO
 // * I should generalize ISelectableThing to IMouseableThing and add both click and select actions?
 
@@ -221,10 +244,11 @@ class PianoRollView extends Base {
   constructor() {
     super();
 
-    var noteView: NoteView = new NoteView();
+    var gridView = new GridView();
+    var noteView = new NoteView();
 
     this.selectableThings = [noteView.model];
-    this.drawableThings = [noteView];
+    this.drawableThings = [noteView, gridView];
 
     this.model = new PianoRollModel();
 
@@ -267,26 +291,19 @@ class PianoRollView extends Base {
 
     this.context.clearRect(0, 0, this.model.canvasWidth, this.model.canvasHeight);
 
-    // Draw grid
+    // Draw children
 
-    for (var i = 0; i < model.widthInNotes; i++) {
-      for (var j = 0; j < model.heightInNotes; j++) {
-        this.context.strokeRect(i * C.NoteWidth, j * C.NoteHeight, C.NoteWidth, C.NoteHeight);
-      }
+    for (var i = 0; i < this.drawableThings.length; i++) {
+      this.drawableThings[i].render(this.context);
     }
 
     // Draw note descriptions
 
     var noteNames = NoteModel.getAllNotes();
 
-    for (var j = 0; j < model.heightInNotes; j++) {
+    // TODO: heightInNotes hardcode.
+    for (var j = 0; j < 20; j++) {
       this.context.strokeText(noteNames[j], 5, j * C.NoteHeight - 5);
-    }
-
-    // Draw notes
-
-    for (var i = 0; i < this.drawableThings.length; i++) {
-      this.drawableThings[i].render(this.context);
     }
 
     window.requestAnimationFrame(this.render);
@@ -295,9 +312,6 @@ class PianoRollView extends Base {
 }
 
 var test: PianoRollModel = new PianoRollModel();
-
-test.widthInNotes = 55;
-
 
 document.addEventListener("DOMContentLoaded", (ev) => {
   var pianoRoll = new PianoRollView();

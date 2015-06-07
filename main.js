@@ -17,9 +17,10 @@ if (typeof __metadata !== "function") __metadata = function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 // TODO
-// * autoprop stuff:
-//   * for stuff like key... some sort of set() validator?
-// * Separate out grid from MainView and make that selectable, too.
+// * Separate out grid from MainView
+// * and make that selectable, too.
+// * Separate out note description sidebar and make that selectable, maybe?
+// * Start moving stuff into different files.
 var C = (function () {
     function C() {
     }
@@ -107,19 +108,9 @@ var PianoRollModel = (function (_super) {
     __extends(PianoRollModel, _super);
     function PianoRollModel() {
         _super.apply(this, arguments);
-        this.widthInNotes = 20;
-        this.heightInNotes = 20;
         this.canvasWidth = 600;
         this.canvasHeight = 600;
     }
-    __decorate([
-        prop, 
-        __metadata('design:type', Object)
-    ], PianoRollModel.prototype, "widthInNotes");
-    __decorate([
-        prop, 
-        __metadata('design:type', Object)
-    ], PianoRollModel.prototype, "heightInNotes");
     __decorate([
         prop, 
         __metadata('design:type', Object)
@@ -246,15 +237,53 @@ var NoteView = (function (_super) {
     };
     return NoteView;
 })(Base);
+var GridModel = (function (_super) {
+    __extends(GridModel, _super);
+    function GridModel() {
+        _super.apply(this, arguments);
+        this.widthInNotes = 40;
+        this.heightInNotes = 20;
+    }
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], GridModel.prototype, "widthInNotes");
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], GridModel.prototype, "heightInNotes");
+    return GridModel;
+})(Base);
+var GridView = (function (_super) {
+    __extends(GridView, _super);
+    function GridView() {
+        _super.apply(this, arguments);
+        this.model = new GridModel();
+    }
+    //
+    // IDrawableThing
+    //
+    GridView.prototype.render = function (context) {
+        var model = this.model;
+        // Draw grid
+        for (var i = 0; i < model.widthInNotes; i++) {
+            for (var j = 0; j < model.heightInNotes; j++) {
+                context.strokeRect(i * C.NoteWidth, j * C.NoteHeight, C.NoteWidth, C.NoteHeight);
+            }
+        }
+    };
+    return GridView;
+})(Base);
 // TODO
 // * I should generalize ISelectableThing to IMouseableThing and add both click and select actions?
 var PianoRollView = (function (_super) {
     __extends(PianoRollView, _super);
     function PianoRollView() {
         _super.call(this);
+        var gridView = new GridView();
         var noteView = new NoteView();
         this.selectableThings = [noteView.model];
-        this.drawableThings = [noteView];
+        this.drawableThings = [noteView, gridView];
         this.model = new PianoRollModel();
         this.canvas = document.getElementById("main");
         this.context = this.canvas.getContext('2d');
@@ -286,27 +315,21 @@ var PianoRollView = (function (_super) {
     PianoRollView.prototype.render = function () {
         var model = this.model;
         this.context.clearRect(0, 0, this.model.canvasWidth, this.model.canvasHeight);
-        // Draw grid
-        for (var i = 0; i < model.widthInNotes; i++) {
-            for (var j = 0; j < model.heightInNotes; j++) {
-                this.context.strokeRect(i * C.NoteWidth, j * C.NoteHeight, C.NoteWidth, C.NoteHeight);
-            }
+        // Draw children
+        for (var i = 0; i < this.drawableThings.length; i++) {
+            this.drawableThings[i].render(this.context);
         }
         // Draw note descriptions
         var noteNames = NoteModel.getAllNotes();
-        for (var j = 0; j < model.heightInNotes; j++) {
+        // TODO: heightInNotes hardcode.
+        for (var j = 0; j < 20; j++) {
             this.context.strokeText(noteNames[j], 5, j * C.NoteHeight - 5);
-        }
-        // Draw notes
-        for (var i = 0; i < this.drawableThings.length; i++) {
-            this.drawableThings[i].render(this.context);
         }
         window.requestAnimationFrame(this.render);
     };
     return PianoRollView;
 })(Base);
 var test = new PianoRollModel();
-test.widthInNotes = 55;
 document.addEventListener("DOMContentLoaded", function (ev) {
     var pianoRoll = new PianoRollView();
 });
