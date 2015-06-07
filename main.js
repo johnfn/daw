@@ -32,6 +32,7 @@ var NoteUIState = (function (_super) {
     function NoteUIState() {
         _super.apply(this, arguments);
         this.selected = false;
+        this.vv = true;
     }
     __decorate([
         prop, 
@@ -47,20 +48,8 @@ var NoteModel = (function (_super) {
         this.length = 0;
         this.start = 0;
         this.octave = 4;
-        this._key = "A";
+        this.key = "A";
     }
-    Object.defineProperty(NoteModel.prototype, "key", {
-        get: function () { return this._key; },
-        set: function (value) {
-            if (!this.validateKey(value)) {
-                console.warn("Invalid key " + value + " passed to NoteModel.");
-                return;
-            }
-            this._key = value;
-        },
-        enumerable: true,
-        configurable: true
-    });
     Object.defineProperty(NoteModel.prototype, "x", {
         get: function () { return this.start; },
         enumerable: true,
@@ -84,7 +73,7 @@ var NoteModel = (function (_super) {
     /*
       Validate that `key` is actually a real key. No flats sorry.
     */
-    NoteModel.prototype.validateKey = function (key) {
+    NoteModel.validateKey = function (key) {
         return NoteModel.keysInOctave.indexOf(key.toUpperCase()) !== -1;
     };
     NoteModel.prototype.validateOctave = function (octave) {
@@ -108,6 +97,10 @@ var NoteModel = (function (_super) {
         prop, 
         __metadata('design:type', Object)
     ], NoteModel.prototype, "octave");
+    __decorate([
+        validatedProp(NoteModel.validateKey), 
+        __metadata('design:type', String)
+    ], NoteModel.prototype, "key");
     return NoteModel;
 })(Base);
 var PianoRollModel = (function (_super) {

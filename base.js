@@ -8,6 +8,23 @@ function prop(target, name) {
         configurable: true
     });
 }
+function validatedProp(validate) {
+    return function _prop(target, name) {
+        Object.defineProperty(target, name, {
+            get: function () { return this["_" + name]; },
+            set: function (value) {
+                if (validate(value)) {
+                    this["_" + name] = value;
+                }
+                else {
+                    console.error("Invalid value " + value + ".");
+                }
+            },
+            enumerable: true,
+            configurable: true
+        });
+    };
+}
 function filter(list, callback) {
     var result = [];
     var len = list.length;

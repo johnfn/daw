@@ -12,6 +12,8 @@ class C {
 
 class NoteUIState extends Base {
   @prop selected = false;
+
+  vv = true;
 }
 
 class NoteModel extends Base {
@@ -20,19 +22,7 @@ class NoteModel extends Base {
   @prop length = 0;
   @prop start = 0;
   @prop octave = 4;
-
-  private _key = "A";
-
-  get key(): string { return this._key; }
-  set key(value: string) {
-    if (!this.validateKey(value)) {
-      console.warn(`Invalid key ${value} passed to NoteModel.`);
-
-      return;
-    }
-
-    this._key = value;
-  }
+  @validatedProp(NoteModel.validateKey) key: string = "A";
 
   get x(): number { return this.start; }
   get y(): number { return this.octave * NoteModel.keysInOctave.length + NoteModel.keysInOctave.indexOf(this.key); }
@@ -55,7 +45,7 @@ class NoteModel extends Base {
   /*
     Validate that `key` is actually a real key. No flats sorry.
   */
-  private validateKey(key: string): boolean {
+  public static validateKey(key: string): boolean {
     return NoteModel.keysInOctave.indexOf(key.toUpperCase()) !== -1;
   }
 

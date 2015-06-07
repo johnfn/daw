@@ -11,6 +11,23 @@ function prop(target: Object, name: string) {
   });
 }
 
+function validatedProp(validate: (x: any) => boolean) {
+  return function _prop(target: Object, name: string) {
+    Object.defineProperty(target, name, {
+      get: function() { return this["_" + name]; },
+      set: function(value) {
+        if (validate(value)) {
+          this["_" + name] = value;
+        } else {
+          console.error(`Invalid value ${value}.`);
+        }
+      },
+      enumerable: true,
+      configurable: true
+    });
+  }
+}
+
 function filter<T>(list: T[], callback: (t: T) => boolean): T[] {
   var result: T[] = [];
   var len = list.length;
