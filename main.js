@@ -260,12 +260,16 @@ var GridModel = (function (_super) {
         this.widthInNotes = 40;
         this.heightInNotes = 20;
         // Selection related properties
-        this.hasHover = false;
+        this.isHovering = false;
         this.hoverX = -1;
         this.hoverY = -1;
-        this.hasClick = false;
-        this.clickX = -1;
-        this.clickY = -1;
+        this.hasSelection = false;
+        this.selectionStartX = -1;
+        this.selectionEndX = -1;
+        this.selectionY = -1;
+        this.isDragging = false;
+        this.dragStartX = -1;
+        this.dragStartY = -1;
         this.depth = Depths.GridDepth;
     }
     //
@@ -276,12 +280,12 @@ var GridModel = (function (_super) {
     };
     GridModel.prototype.hoverOver = function (x, y) {
         // Deselect any old selected note(s)
-        this.hasHover = true;
+        this.isHovering = true;
         this.hoverX = Math.floor(x / C.NoteWidth);
         this.hoverY = Math.floor(y / C.NoteHeight);
     };
     GridModel.prototype.unhover = function () {
-        this.hasHover = false;
+        this.isHovering = false;
     };
     //
     // IClickable
@@ -290,22 +294,28 @@ var GridModel = (function (_super) {
         return true;
     };
     GridModel.prototype.click = function (x, y) {
-        this.hasClick = true;
-        this.clickX = Math.floor(x / C.NoteWidth);
-        this.clickY = Math.floor(y / C.NoteHeight);
+        this.hasSelection = true;
+        this.selectionStartX = Math.floor(x / C.NoteWidth);
+        this.selectionEndX = this.selectionStartX;
+        this.selectionY = Math.floor(y / C.NoteHeight);
     };
     GridModel.prototype.removeFocus = function () {
-        this.hasClick = false;
+        this.hasSelection = false;
     };
     //
     // IDraggable
     //
     GridModel.prototype.startDrag = function (x, y) {
+        this.isDragging = true;
+        this.dragStartX = Math.floor(x / C.NoteWidth);
+        this.dragStartY = Math.floor(y / C.NoteHeight);
     };
     GridModel.prototype.continueDrag = function (x, y) {
-        console.log("Drag " + x + " " + y);
+        var normalizedX = Math.floor(x / C.NoteWidth);
+        var normalizedY = Math.floor(y / C.NoteHeight);
     };
     GridModel.prototype.endDrag = function (x, y) {
+        this.isDragging = false;
     };
     __decorate([
         prop, 
@@ -318,7 +328,7 @@ var GridModel = (function (_super) {
     __decorate([
         prop, 
         __metadata('design:type', Object)
-    ], GridModel.prototype, "hasHover");
+    ], GridModel.prototype, "isHovering");
     __decorate([
         prop, 
         __metadata('design:type', Object)
@@ -330,15 +340,31 @@ var GridModel = (function (_super) {
     __decorate([
         prop, 
         __metadata('design:type', Object)
-    ], GridModel.prototype, "hasClick");
+    ], GridModel.prototype, "hasSelection");
     __decorate([
         prop, 
         __metadata('design:type', Object)
-    ], GridModel.prototype, "clickX");
+    ], GridModel.prototype, "selectionStartX");
     __decorate([
         prop, 
         __metadata('design:type', Object)
-    ], GridModel.prototype, "clickY");
+    ], GridModel.prototype, "selectionEndX");
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], GridModel.prototype, "selectionY");
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], GridModel.prototype, "isDragging");
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], GridModel.prototype, "dragStartX");
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], GridModel.prototype, "dragStartY");
     return GridModel;
 })(Base);
 var GridView = (function (_super) {
@@ -358,13 +384,15 @@ var GridView = (function (_super) {
                 context.strokeRect(i * C.NoteWidth, j * C.NoteHeight, C.NoteWidth, C.NoteHeight);
             }
         }
-        if (this.model.hasHover) {
+        if (this.model.isHovering) {
             context.fillStyle = "rgb(200, 200, 200)";
             context.fillRect(C.NoteWidth * this.model.hoverX, C.NoteHeight * this.model.hoverY, C.NoteWidth, C.NoteHeight);
         }
-        if (this.model.hasClick) {
+        if (this.model.hasSelection) {
             context.fillStyle = "rgb(200, 200, 200)";
-            context.fillRect(C.NoteWidth * this.model.clickX, C.NoteHeight * this.model.clickY, C.NoteWidth, C.NoteHeight);
+            for (var i = this.model.selectionStartX; i <= this.model.selectionEndX; i++) {
+                context.fillRect(C.NoteWidth * i, C.NoteHeight * this.model.selectionY, C.NoteWidth, C.NoteHeight);
+            }
         }
     };
     return GridView;

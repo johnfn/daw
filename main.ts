@@ -240,13 +240,18 @@ class GridModel extends Base implements IHoverable, IClickable, IDraggable {
 
   // Selection related properties
 
-  @prop hasHover = false;
+  @prop isHovering = false;
   @prop hoverX = -1;
   @prop hoverY = -1;
 
-  @prop hasClick = false;
-  @prop clickX = -1;
-  @prop clickY = -1;
+  @prop hasSelection = false;
+  @prop selectionStartX = -1;
+  @prop selectionEndX = -1;
+  @prop selectionY = -1;
+
+  @prop isDragging = false;
+  @prop dragStartX = -1;
+  @prop dragStartY = -1;
 
   //
   // IHoverable
@@ -259,14 +264,14 @@ class GridModel extends Base implements IHoverable, IClickable, IDraggable {
   hoverOver(x: number, y: number): void {
     // Deselect any old selected note(s)
 
-    this.hasHover = true;
+    this.isHovering = true;
 
     this.hoverX = Math.floor(x / C.NoteWidth);
     this.hoverY = Math.floor(y / C.NoteHeight);
   }
 
   unhover(): void {
-    this.hasHover = false;
+    this.isHovering = false;
   }
 
   depth = Depths.GridDepth;
@@ -280,14 +285,15 @@ class GridModel extends Base implements IHoverable, IClickable, IDraggable {
   }
 
   click(x: number, y: number): void {
-    this.hasClick = true;
+    this.hasSelection = true;
 
-    this.clickX = Math.floor(x / C.NoteWidth);
-    this.clickY = Math.floor(y / C.NoteHeight);
+    this.selectionStartX = Math.floor(x / C.NoteWidth);
+    this.selectionEndX = this.selectionStartX;
+    this.selectionY = Math.floor(y / C.NoteHeight);
   }
 
   removeFocus(): void {
-    this.hasClick = false;
+    this.hasSelection = false;
   }
 
   //
@@ -295,15 +301,19 @@ class GridModel extends Base implements IHoverable, IClickable, IDraggable {
   //
 
   startDrag(x: number, y: number): void {
+    this.isDragging = true;
 
+    this.dragStartX = Math.floor(x / C.NoteWidth);
+    this.dragStartY = Math.floor(y / C.NoteHeight);
   }
 
   continueDrag(x: number, y: number): void {
-    console.log(`Drag ${x} ${y}`);
+    var normalizedX = Math.floor(x / C.NoteWidth);
+    var normalizedY = Math.floor(y / C.NoteHeight);
   }
 
   endDrag(x: number, y: number): void {
-
+    this.isDragging = false;
   }
 }
 
@@ -325,14 +335,17 @@ class GridView extends Base implements IRenderable {
       }
     }
 
-    if (this.model.hasHover) {
+    if (this.model.isHovering) {
       context.fillStyle = "rgb(200, 200, 200)";
       context.fillRect(C.NoteWidth * this.model.hoverX, C.NoteHeight * this.model.hoverY, C.NoteWidth, C.NoteHeight);
     }
 
-    if (this.model.hasClick) {
+    if (this.model.hasSelection) {
       context.fillStyle = "rgb(200, 200, 200)";
-      context.fillRect(C.NoteWidth * this.model.clickX, C.NoteHeight * this.model.clickY, C.NoteWidth, C.NoteHeight);
+
+      for (var i = this.model.selectionStartX; i <= this.model.selectionEndX; i++) {
+        context.fillRect(C.NoteWidth * i, C.NoteHeight * this.model.selectionY, C.NoteWidth, C.NoteHeight);
+      }
     }
   }
 }
