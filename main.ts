@@ -213,10 +213,10 @@ class NoteView extends Base implements IRenderable {
     // Draw notes
 
     for (var note of model.notes) {
-      if (note.uiState.selected) {
+      if (note.uiState.clicked) {
+        context.fillStyle = "rgb(150, 0, 0)";
+      } else if (note.uiState.selected) {
         context.fillStyle = "rgb(255, 100, 100)";
-      } else if (note.uiState.clicked) {
-        context.fillStyle = "rgb(255, 200, 200)";
       } else {
         context.fillStyle = "rgb(255, 0, 0)";
       }
@@ -294,9 +294,10 @@ class PianoRollView extends Base {
 
   private model: PianoRollModel;
 
-  private selectableThings: IHoverable[];
+  private hoverableThings: IHoverable[];
   private currentlySelectedThing: IHoverable;
   private drawableThings: IRenderable[];
+  private clickableThings: IClickable[];
 
   constructor() {
     super();
@@ -304,8 +305,9 @@ class PianoRollView extends Base {
     var gridView = new GridView();
     var noteView = new NoteView();
 
-    this.selectableThings = [noteView.model, gridView.model];
+    this.hoverableThings = [noteView.model, gridView.model];
     this.drawableThings = [noteView, gridView];
+    this.clickableThings = [noteView.model];
 
     this.model = new PianoRollModel();
 
@@ -326,10 +328,24 @@ class PianoRollView extends Base {
     this.canvas.addEventListener("mousemove", (ev: MouseEvent) => {
       this.mouseMove(ev.offsetX, ev.offsetY);
     });
+
+    this.canvas.addEventListener("mousedown", (ev: MouseEvent) => {
+      this.mouseDown(ev.offsetX, ev.offsetY);
+    })
+  }
+
+  private mouseDown(x: number, y: number): void {
+    for (var thing of this.clickableThings) {
+      if (thing.hasSomethingToClickAt(x, y)) {
+        thing.click(x, y);
+
+        break;
+      }
+    }
   }
 
   private mouseMove(x: number, y: number) {
-    for (var thing of this.selectableThings) {
+    for (var thing of this.hoverableThings) {
      if (thing.hasSomethingToHoverOverAt(x, y)) {
         // Select the new thing.
 

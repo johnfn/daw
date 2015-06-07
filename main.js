@@ -238,11 +238,11 @@ var NoteView = (function (_super) {
         // Draw notes
         for (var _i = 0, _a = model.notes; _i < _a.length; _i++) {
             var note = _a[_i];
-            if (note.uiState.selected) {
-                context.fillStyle = "rgb(255, 100, 100)";
+            if (note.uiState.clicked) {
+                context.fillStyle = "rgb(150, 0, 0)";
             }
-            else if (note.uiState.clicked) {
-                context.fillStyle = "rgb(255, 200, 200)";
+            else if (note.uiState.selected) {
+                context.fillStyle = "rgb(255, 100, 100)";
             }
             else {
                 context.fillStyle = "rgb(255, 0, 0)";
@@ -333,8 +333,9 @@ var PianoRollView = (function (_super) {
         _super.call(this);
         var gridView = new GridView();
         var noteView = new NoteView();
-        this.selectableThings = [noteView.model, gridView.model];
+        this.hoverableThings = [noteView.model, gridView.model];
         this.drawableThings = [noteView, gridView];
+        this.clickableThings = [noteView.model];
         this.model = new PianoRollModel();
         this.canvas = document.getElementById("main");
         this.context = this.canvas.getContext('2d');
@@ -349,9 +350,21 @@ var PianoRollView = (function (_super) {
         this.canvas.addEventListener("mousemove", function (ev) {
             _this.mouseMove(ev.offsetX, ev.offsetY);
         });
+        this.canvas.addEventListener("mousedown", function (ev) {
+            _this.mouseDown(ev.offsetX, ev.offsetY);
+        });
+    };
+    PianoRollView.prototype.mouseDown = function (x, y) {
+        for (var _i = 0, _a = this.clickableThings; _i < _a.length; _i++) {
+            var thing = _a[_i];
+            if (thing.hasSomethingToClickAt(x, y)) {
+                thing.click(x, y);
+                break;
+            }
+        }
     };
     PianoRollView.prototype.mouseMove = function (x, y) {
-        for (var _i = 0, _a = this.selectableThings; _i < _a.length; _i++) {
+        for (var _i = 0, _a = this.hoverableThings; _i < _a.length; _i++) {
             var thing = _a[_i];
             if (thing.hasSomethingToHoverOverAt(x, y)) {
                 // Select the new thing.
