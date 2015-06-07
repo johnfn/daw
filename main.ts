@@ -310,10 +310,15 @@ class GridModel extends Base implements IHoverable, IClickable, IDraggable {
   continueDrag(x: number, y: number): void {
     var normalizedX = Math.floor(x / C.NoteWidth);
     var normalizedY = Math.floor(y / C.NoteHeight);
+
+    this.selectionStartX = Math.min(this.dragStartX, normalizedX);
+    this.selectionEndX   = Math.max(this.dragStartX, normalizedX);
   }
 
   endDrag(x: number, y: number): void {
     this.isDragging = false;
+
+    this.click(x, y);
   }
 }
 
@@ -343,9 +348,14 @@ class GridView extends Base implements IRenderable {
     if (this.model.hasSelection) {
       context.fillStyle = "rgb(200, 200, 200)";
 
-      for (var i = this.model.selectionStartX; i <= this.model.selectionEndX; i++) {
-        context.fillRect(C.NoteWidth * i, C.NoteHeight * this.model.selectionY, C.NoteWidth, C.NoteHeight);
+      if (this.model.isDragging) {
+        for (var i = this.model.selectionStartX; i <= this.model.selectionEndX; i++) {
+          context.fillRect(C.NoteWidth * i, C.NoteHeight * this.model.selectionY, C.NoteWidth, C.NoteHeight);
+        }
+      } else {
+        context.fillRect(C.NoteWidth * this.model.selectionStartX, C.NoteHeight * this.model.selectionY, C.NoteWidth, C.NoteHeight);
       }
+
     }
   }
 }

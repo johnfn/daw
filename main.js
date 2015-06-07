@@ -313,9 +313,12 @@ var GridModel = (function (_super) {
     GridModel.prototype.continueDrag = function (x, y) {
         var normalizedX = Math.floor(x / C.NoteWidth);
         var normalizedY = Math.floor(y / C.NoteHeight);
+        this.selectionStartX = Math.min(this.dragStartX, normalizedX);
+        this.selectionEndX = Math.max(this.dragStartX, normalizedX);
     };
     GridModel.prototype.endDrag = function (x, y) {
         this.isDragging = false;
+        this.click(x, y);
     };
     __decorate([
         prop, 
@@ -390,8 +393,13 @@ var GridView = (function (_super) {
         }
         if (this.model.hasSelection) {
             context.fillStyle = "rgb(200, 200, 200)";
-            for (var i = this.model.selectionStartX; i <= this.model.selectionEndX; i++) {
-                context.fillRect(C.NoteWidth * i, C.NoteHeight * this.model.selectionY, C.NoteWidth, C.NoteHeight);
+            if (this.model.isDragging) {
+                for (var i = this.model.selectionStartX; i <= this.model.selectionEndX; i++) {
+                    context.fillRect(C.NoteWidth * i, C.NoteHeight * this.model.selectionY, C.NoteWidth, C.NoteHeight);
+                }
+            }
+            else {
+                context.fillRect(C.NoteWidth * this.model.selectionStartX, C.NoteHeight * this.model.selectionY, C.NoteWidth, C.NoteHeight);
             }
         }
     };
