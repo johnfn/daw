@@ -17,8 +17,8 @@ if (typeof __metadata !== "function") __metadata = function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 // TODO
-// * Separate out grid from MainView
-// * and make that selectable, too.
+// * Rename selectable to hoverable
+// * Add an actual ISelectable
 // * Some sort of Math.flooring x/y normalizer
 // * Separate out note description sidebar and make that selectable, maybe?
 // * Start moving stuff into different files.
@@ -158,6 +158,13 @@ var NoteViewModel = (function (_super) {
         }
         return new Maybe();
     };
+    NoteViewModel.prototype.deselectAllNotes = function () {
+        var notes = this.selectedNotes;
+        for (var _i = 0; _i < notes.length; _i++) {
+            var n = notes[_i];
+            n.uiState.selected = false;
+        }
+    };
     //
     // ISelectableThing
     //
@@ -166,11 +173,7 @@ var NoteViewModel = (function (_super) {
     };
     NoteViewModel.prototype.selectAt = function (x, y) {
         // Deselect any old selected note(s)
-        var notes = this.selectedNotes;
-        for (var _i = 0; _i < notes.length; _i++) {
-            var n = notes[_i];
-            n.uiState.selected = false;
-        }
+        this.deselectAllNotes();
         // Select new note
         var note = this.getNoteAt(x, y);
         if (note.hasValue) {
@@ -178,7 +181,7 @@ var NoteViewModel = (function (_super) {
         }
     };
     NoteViewModel.prototype.deselect = function () {
-        console.warn("Stub");
+        this.deselectAllNotes();
     };
     __decorate([
         prop, 
@@ -205,7 +208,7 @@ var NoteView = (function (_super) {
         this.model.notes.push(note2);
     }
     //
-    // IDrawableThing
+    // IRenderable
     //
     NoteView.prototype.render = function (context) {
         var model = this.model;
@@ -248,7 +251,7 @@ var GridModel = (function (_super) {
         this.selectionY = Math.floor(y / C.NoteHeight);
     };
     GridModel.prototype.deselect = function () {
-        console.warn("Stub");
+        this.hasSelection = false;
     };
     __decorate([
         prop, 
@@ -279,7 +282,7 @@ var GridView = (function (_super) {
         this.model = new GridModel();
     }
     //
-    // IDrawableThing
+    // IRenderable
     //
     GridView.prototype.render = function (context) {
         var model = this.model;
@@ -312,9 +315,6 @@ var PianoRollView = (function (_super) {
         this.setUpCanvas();
         window.requestAnimationFrame(this.render);
     }
-    PianoRollView.prototype.getItemAtPoint = function (x, y) {
-        // Check notes
-    };
     PianoRollView.prototype.setUpCanvas = function () {
         var _this = this;
         this.canvas.width = this.model.canvasWidth;
@@ -328,7 +328,13 @@ var PianoRollView = (function (_super) {
         for (var _i = 0, _a = this.selectableThings; _i < _a.length; _i++) {
             var thing = _a[_i];
             if (thing.hasSomethingToSelectAt(x, y)) {
+                // Select the new thing.
                 thing.selectAt(x, y);
+                // Deselect the previous thing, if there was one.
+                if (this.currentlySelectedThing && this.currentlySelectedThing != thing) {
+                    this.currentlySelectedThing.deselect();
+                }
+                this.currentlySelectedThing = thing;
                 break;
             }
         }

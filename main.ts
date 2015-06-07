@@ -1,8 +1,8 @@
 /// <reference path="references.d.ts" />
 
 // TODO
-// * Separate out grid from MainView
-// * and make that selectable, too.
+// * Rename selectable to hoverable
+// * Add an actual ISelectable
 // * Some sort of Math.flooring x/y normalizer
 // * Separate out note description sidebar and make that selectable, maybe?
 // * Start moving stuff into different files.
@@ -63,7 +63,7 @@ class NoteModel extends Base {
   }
 }
 
-interface IDrawableThing {
+interface IRenderable {
   render(context: CanvasRenderingContext2D): void;
 }
 
@@ -113,6 +113,14 @@ class NoteViewModel extends Base implements ISelectableThing {
     return new Maybe<NoteModel>();
   }
 
+  private deselectAllNotes(): void {
+    var notes = this.selectedNotes;
+
+    for (var n of notes) {
+      n.uiState.selected = false;
+    }
+  }
+
   //
   // ISelectableThing
   //
@@ -124,11 +132,7 @@ class NoteViewModel extends Base implements ISelectableThing {
   selectAt(x: number, y: number): void {
     // Deselect any old selected note(s)
 
-    var notes = this.selectedNotes;
-
-    for (var n of notes) {
-      n.uiState.selected = false;
-    }
+    this.deselectAllNotes();
 
     // Select new note
 
@@ -140,13 +144,13 @@ class NoteViewModel extends Base implements ISelectableThing {
   }
 
   deselect(): void {
-    console.warn("Stub");
+    this.deselectAllNotes();
   }
 
   depth = Depths.NoteDepth;
 }
 
-class NoteView extends Base implements IDrawableThing {
+class NoteView extends Base implements IRenderable {
   public model: NoteViewModel = new NoteViewModel();
 
   constructor() {
@@ -169,7 +173,7 @@ class NoteView extends Base implements IDrawableThing {
   }
 
   //
-  // IDrawableThing
+  // IRenderable
   //
 
   public render(context: CanvasRenderingContext2D): void {
@@ -217,17 +221,17 @@ class GridModel extends Base {
   }
 
   deselect(): void {
-    console.warn("Stub");
+    this.hasSelection = false;
   }
 
   depth = Depths.GridDepth;
 }
 
-class GridView extends Base implements IDrawableThing {
+class GridView extends Base implements IRenderable {
   public model = new GridModel();
 
   //
-  // IDrawableThing
+  // IRenderable
   //
 
   public render(context: CanvasRenderingContext2D): void {
@@ -258,7 +262,8 @@ class PianoRollView extends Base {
   private model: PianoRollModel;
 
   private selectableThings: ISelectableThing[];
-  private drawableThings: IDrawableThing[];
+  private currentlySelectedThing: ISelectableThing;
+  private drawableThings: IRenderable[];
 
   constructor() {
     super();
@@ -279,10 +284,6 @@ class PianoRollView extends Base {
     window.requestAnimationFrame(this.render);
   }
 
-  private getItemAtPoint(x: number, y: number) {
-    // Check notes
-  }
-
   private setUpCanvas() {
     this.canvas.width = this.model.canvasWidth;
     this.canvas.height = this.model.canvasHeight;
@@ -297,7 +298,17 @@ class PianoRollView extends Base {
   private mouseMove(x: number, y: number) {
     for (var thing of this.selectableThings) {
      if (thing.hasSomethingToSelectAt(x, y)) {
+        // Select the new thing.
+
         thing.selectAt(x, y);
+
+        // Deselect the previous thing, if there was one.
+
+        if (this.currentlySelectedThing && this.currentlySelectedThing != thing) {
+          this.currentlySelectedThing.deselect();
+        }
+
+        this.currentlySelectedThing = thing;
 
         break;
       }
