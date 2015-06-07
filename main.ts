@@ -133,7 +133,7 @@ class NoteViewModel extends Base implements IHoverable, IClickable {
   }
 
   //
-  // ISelectableThing
+  // IHoverable
   //
 
   hasSomethingToHoverOverAt(x: number, y: number): boolean {
@@ -226,15 +226,19 @@ class NoteView extends Base implements IRenderable {
   }
 }
 
-class GridModel extends Base implements IHoverable {
+class GridModel extends Base implements IHoverable, IClickable {
   @prop widthInNotes = 40;
   @prop heightInNotes = 20;
 
   // Selection related properties
 
-  @prop hasSelection = false;
-  @prop selectionX = -1;
-  @prop selectionY = -1;
+  @prop hasHover = false;
+  @prop hoverX = -1;
+  @prop hoverY = -1;
+
+  @prop hasClick = false;
+  @prop clickX = -1;
+  @prop clickY = -1;
 
   //
   // ISelectableThing
@@ -247,17 +251,36 @@ class GridModel extends Base implements IHoverable {
   hoverOver(x: number, y: number): void {
     // Deselect any old selected note(s)
 
-    this.hasSelection = true;
+    this.hasHover = true;
 
-    this.selectionX = Math.floor(x / C.NoteWidth);
-    this.selectionY = Math.floor(y / C.NoteHeight);
+    this.hoverX = Math.floor(x / C.NoteWidth);
+    this.hoverY = Math.floor(y / C.NoteHeight);
   }
 
   unhover(): void {
-    this.hasSelection = false;
+    this.hasHover = false;
   }
 
   depth = Depths.GridDepth;
+
+  //
+  // IClickable
+  //
+
+  hasSomethingToClickAt(x: number, y: number): boolean {
+    return true;
+  }
+
+  click(x: number, y: number): void {
+    this.hasClick = true;
+
+    this.clickX = Math.floor(x / C.NoteWidth);
+    this.clickY = Math.floor(y / C.NoteHeight);
+  }
+
+  removeFocus(): void {
+    this.hasClick = false;
+  }
 }
 
 class GridView extends Base implements IRenderable {
@@ -278,9 +301,14 @@ class GridView extends Base implements IRenderable {
       }
     }
 
-    if (this.model.hasSelection) {
+    if (this.model.hasHover) {
       context.fillStyle = "rgb(200, 200, 200)";
-      context.fillRect(C.NoteWidth * this.model.selectionX, C.NoteHeight * this.model.selectionY, C.NoteWidth, C.NoteHeight);
+      context.fillRect(C.NoteWidth * this.model.hoverX, C.NoteHeight * this.model.hoverY, C.NoteWidth, C.NoteHeight);
+    }
+
+    if (this.model.hasClick) {
+      context.fillStyle = "rgb(200, 200, 200)";
+      context.fillRect(C.NoteWidth * this.model.clickX, C.NoteHeight * this.model.clickY, C.NoteWidth, C.NoteHeight);
     }
   }
 }
@@ -309,7 +337,7 @@ class PianoRollView extends Base {
 
     this.hoverableThings = [noteView.model, gridView.model];
     this.drawableThings = [noteView, gridView];
-    this.clickableThings = [noteView.model];
+    this.clickableThings = [noteView.model, gridView.model];
 
     this.model = new PianoRollModel();
 

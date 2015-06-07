@@ -175,7 +175,7 @@ var NoteViewModel = (function (_super) {
         this.clickedNotes.map(function (note) { return note.uiState.clicked = false; });
     };
     //
-    // ISelectableThing
+    // IHoverable
     //
     NoteViewModel.prototype.hasSomethingToHoverOverAt = function (x, y) {
         return this.getNoteAt(x, y).hasValue;
@@ -260,9 +260,12 @@ var GridModel = (function (_super) {
         this.widthInNotes = 40;
         this.heightInNotes = 20;
         // Selection related properties
-        this.hasSelection = false;
-        this.selectionX = -1;
-        this.selectionY = -1;
+        this.hasHover = false;
+        this.hoverX = -1;
+        this.hoverY = -1;
+        this.hasClick = false;
+        this.clickX = -1;
+        this.clickY = -1;
         this.depth = Depths.GridDepth;
     }
     //
@@ -273,12 +276,26 @@ var GridModel = (function (_super) {
     };
     GridModel.prototype.hoverOver = function (x, y) {
         // Deselect any old selected note(s)
-        this.hasSelection = true;
-        this.selectionX = Math.floor(x / C.NoteWidth);
-        this.selectionY = Math.floor(y / C.NoteHeight);
+        this.hasHover = true;
+        this.hoverX = Math.floor(x / C.NoteWidth);
+        this.hoverY = Math.floor(y / C.NoteHeight);
     };
     GridModel.prototype.unhover = function () {
-        this.hasSelection = false;
+        this.hasHover = false;
+    };
+    //
+    // IClickable
+    //
+    GridModel.prototype.hasSomethingToClickAt = function (x, y) {
+        return true;
+    };
+    GridModel.prototype.click = function (x, y) {
+        this.hasClick = true;
+        this.clickX = Math.floor(x / C.NoteWidth);
+        this.clickY = Math.floor(y / C.NoteHeight);
+    };
+    GridModel.prototype.removeFocus = function () {
+        this.hasClick = false;
     };
     __decorate([
         prop, 
@@ -291,15 +308,27 @@ var GridModel = (function (_super) {
     __decorate([
         prop, 
         __metadata('design:type', Object)
-    ], GridModel.prototype, "hasSelection");
+    ], GridModel.prototype, "hasHover");
     __decorate([
         prop, 
         __metadata('design:type', Object)
-    ], GridModel.prototype, "selectionX");
+    ], GridModel.prototype, "hoverX");
     __decorate([
         prop, 
         __metadata('design:type', Object)
-    ], GridModel.prototype, "selectionY");
+    ], GridModel.prototype, "hoverY");
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], GridModel.prototype, "hasClick");
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], GridModel.prototype, "clickX");
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], GridModel.prototype, "clickY");
     return GridModel;
 })(Base);
 var GridView = (function (_super) {
@@ -319,9 +348,13 @@ var GridView = (function (_super) {
                 context.strokeRect(i * C.NoteWidth, j * C.NoteHeight, C.NoteWidth, C.NoteHeight);
             }
         }
-        if (this.model.hasSelection) {
+        if (this.model.hasHover) {
             context.fillStyle = "rgb(200, 200, 200)";
-            context.fillRect(C.NoteWidth * this.model.selectionX, C.NoteHeight * this.model.selectionY, C.NoteWidth, C.NoteHeight);
+            context.fillRect(C.NoteWidth * this.model.hoverX, C.NoteHeight * this.model.hoverY, C.NoteWidth, C.NoteHeight);
+        }
+        if (this.model.hasClick) {
+            context.fillStyle = "rgb(200, 200, 200)";
+            context.fillRect(C.NoteWidth * this.model.clickX, C.NoteHeight * this.model.clickY, C.NoteWidth, C.NoteHeight);
         }
     };
     return GridView;
@@ -336,7 +369,7 @@ var PianoRollView = (function (_super) {
         var noteView = new NoteView();
         this.hoverableThings = [noteView.model, gridView.model];
         this.drawableThings = [noteView, gridView];
-        this.clickableThings = [noteView.model];
+        this.clickableThings = [noteView.model, gridView.model];
         this.model = new PianoRollModel();
         this.canvas = document.getElementById("main");
         this.context = this.canvas.getContext('2d');
