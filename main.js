@@ -205,6 +205,7 @@ var NoteViewModel = (function (_super) {
         }
     };
     NoteViewModel.prototype.removeFocus = function () {
+        this.unclickAllNotes();
     };
     __decorate([
         prop, 
@@ -358,7 +359,11 @@ var PianoRollView = (function (_super) {
         for (var _i = 0, _a = this.clickableThings; _i < _a.length; _i++) {
             var thing = _a[_i];
             if (thing.hasSomethingToClickAt(x, y)) {
+                if (this.currentlyClickedThing) {
+                    this.currentlyClickedThing.removeFocus();
+                }
                 thing.click(x, y);
+                this.currentlyClickedThing = thing;
                 break;
             }
         }
@@ -367,13 +372,13 @@ var PianoRollView = (function (_super) {
         for (var _i = 0, _a = this.hoverableThings; _i < _a.length; _i++) {
             var thing = _a[_i];
             if (thing.hasSomethingToHoverOverAt(x, y)) {
+                // Deselect the previous thing, if there was one.
+                if (this.currentlyHoveredThing) {
+                    this.currentlyHoveredThing.unhover();
+                }
                 // Select the new thing.
                 thing.hoverOver(x, y);
-                // Deselect the previous thing, if there was one.
-                if (this.currentlySelectedThing && this.currentlySelectedThing != thing) {
-                    this.currentlySelectedThing.unhover();
-                }
-                this.currentlySelectedThing = thing;
+                this.currentlyHoveredThing = thing;
                 break;
             }
         }

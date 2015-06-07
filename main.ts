@@ -177,7 +177,7 @@ class NoteViewModel extends Base implements IHoverable, IClickable {
   }
 
   removeFocus(): void {
-
+    this.unclickAllNotes();
   }
 }
 
@@ -294,8 +294,10 @@ class PianoRollView extends Base {
 
   private model: PianoRollModel;
 
+  private currentlyHoveredThing: IHoverable;
+  private currentlyClickedThing: IClickable;
+
   private hoverableThings: IHoverable[];
-  private currentlySelectedThing: IHoverable;
   private drawableThings: IRenderable[];
   private clickableThings: IClickable[];
 
@@ -337,7 +339,13 @@ class PianoRollView extends Base {
   private mouseDown(x: number, y: number): void {
     for (var thing of this.clickableThings) {
       if (thing.hasSomethingToClickAt(x, y)) {
+        if (this.currentlyClickedThing) {
+          this.currentlyClickedThing.removeFocus();
+        }
+
         thing.click(x, y);
+
+        this.currentlyClickedThing = thing;
 
         break;
       }
@@ -347,17 +355,17 @@ class PianoRollView extends Base {
   private mouseMove(x: number, y: number) {
     for (var thing of this.hoverableThings) {
      if (thing.hasSomethingToHoverOverAt(x, y)) {
+        // Deselect the previous thing, if there was one.
+
+        if (this.currentlyHoveredThing) {
+          this.currentlyHoveredThing.unhover();
+        }
+
         // Select the new thing.
 
         thing.hoverOver(x, y);
 
-        // Deselect the previous thing, if there was one.
-
-        if (this.currentlySelectedThing && this.currentlySelectedThing != thing) {
-          this.currentlySelectedThing.unhover();
-        }
-
-        this.currentlySelectedThing = thing;
+        this.currentlyHoveredThing = thing;
 
         break;
       }
