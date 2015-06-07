@@ -19,8 +19,6 @@ class Depths {
 
 class NoteUIState extends Base {
   @prop selected = false;
-
-  vv = true;
 }
 
 class NoteModel extends Base {
@@ -67,19 +65,18 @@ interface IRenderable {
   render(context: CanvasRenderingContext2D): void;
 }
 
-interface ISelectableThing {
+interface IHoverable {
   /**
     x and y are pixel values that have not been normalized (except such that (0, 0) is the top left of the canvas)
   */
-  hasSomethingToSelectAt(x: number, y: number): boolean;
+  hasSomethingToHoverOverAt(x: number, y: number): boolean;
 
-  selectAt(x: number, y: number): void;
+  hoverOver(x: number, y: number): void;
 
-  // TODO: Implement this more generally.
-  deselect(): void;
+  unhover(): void;
 
   /**
-    How high the selectable thing is in the hierarchy. Bigger numbers are on top of smaller numbers.
+    How high the hoverable thing is in the hierarchy. Bigger numbers are on top of smaller numbers.
   */
   depth: number;
 }
@@ -89,7 +86,7 @@ class PianoRollModel extends Base {
   @prop canvasHeight = 600;
 }
 
-class NoteViewModel extends Base implements ISelectableThing {
+class NoteViewModel extends Base implements IHoverable {
   @prop notes: NoteModel[] = [];
 
   get selectedNotes(): NoteModel[] {
@@ -125,11 +122,11 @@ class NoteViewModel extends Base implements ISelectableThing {
   // ISelectableThing
   //
 
-  hasSomethingToSelectAt(x: number, y: number): boolean {
+  hasSomethingToHoverOverAt(x: number, y: number): boolean {
     return this.getNoteAt(x, y).hasValue;
   }
 
-  selectAt(x: number, y: number): void {
+  hoverOver(x: number, y: number): void {
     // Deselect any old selected note(s)
 
     this.deselectAllNotes();
@@ -143,7 +140,7 @@ class NoteViewModel extends Base implements ISelectableThing {
     }
   }
 
-  deselect(): void {
+  unhover(): void {
     this.deselectAllNotes();
   }
 
@@ -193,7 +190,7 @@ class NoteView extends Base implements IRenderable {
   }
 }
 
-class GridModel extends Base {
+class GridModel extends Base implements IHoverable {
   @prop widthInNotes = 40;
   @prop heightInNotes = 20;
 
@@ -207,11 +204,11 @@ class GridModel extends Base {
   // ISelectableThing
   //
 
-  hasSomethingToSelectAt(x: number, y: number): boolean {
+  hasSomethingToHoverOverAt(x: number, y: number): boolean {
     return true;
   }
 
-  selectAt(x: number, y: number): void {
+  hoverOver(x: number, y: number): void {
     // Deselect any old selected note(s)
 
     this.hasSelection = true;
@@ -220,7 +217,7 @@ class GridModel extends Base {
     this.selectionY = Math.floor(y / C.NoteHeight);
   }
 
-  deselect(): void {
+  unhover(): void {
     this.hasSelection = false;
   }
 
@@ -261,8 +258,8 @@ class PianoRollView extends Base {
 
   private model: PianoRollModel;
 
-  private selectableThings: ISelectableThing[];
-  private currentlySelectedThing: ISelectableThing;
+  private selectableThings: IHoverable[];
+  private currentlySelectedThing: IHoverable;
   private drawableThings: IRenderable[];
 
   constructor() {
@@ -297,15 +294,15 @@ class PianoRollView extends Base {
 
   private mouseMove(x: number, y: number) {
     for (var thing of this.selectableThings) {
-     if (thing.hasSomethingToSelectAt(x, y)) {
+     if (thing.hasSomethingToHoverOverAt(x, y)) {
         // Select the new thing.
 
-        thing.selectAt(x, y);
+        thing.hoverOver(x, y);
 
         // Deselect the previous thing, if there was one.
 
         if (this.currentlySelectedThing && this.currentlySelectedThing != thing) {
-          this.currentlySelectedThing.deselect();
+          this.currentlySelectedThing.unhover();
         }
 
         this.currentlySelectedThing = thing;

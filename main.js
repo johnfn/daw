@@ -41,7 +41,6 @@ var NoteUIState = (function (_super) {
     function NoteUIState() {
         _super.apply(this, arguments);
         this.selected = false;
-        this.vv = true;
     }
     __decorate([
         prop, 
@@ -168,10 +167,10 @@ var NoteViewModel = (function (_super) {
     //
     // ISelectableThing
     //
-    NoteViewModel.prototype.hasSomethingToSelectAt = function (x, y) {
+    NoteViewModel.prototype.hasSomethingToHoverOverAt = function (x, y) {
         return this.getNoteAt(x, y).hasValue;
     };
-    NoteViewModel.prototype.selectAt = function (x, y) {
+    NoteViewModel.prototype.hoverOver = function (x, y) {
         // Deselect any old selected note(s)
         this.deselectAllNotes();
         // Select new note
@@ -180,7 +179,7 @@ var NoteViewModel = (function (_super) {
             note.value.uiState.selected = true;
         }
     };
-    NoteViewModel.prototype.deselect = function () {
+    NoteViewModel.prototype.unhover = function () {
         this.deselectAllNotes();
     };
     __decorate([
@@ -241,16 +240,16 @@ var GridModel = (function (_super) {
     //
     // ISelectableThing
     //
-    GridModel.prototype.hasSomethingToSelectAt = function (x, y) {
+    GridModel.prototype.hasSomethingToHoverOverAt = function (x, y) {
         return true;
     };
-    GridModel.prototype.selectAt = function (x, y) {
+    GridModel.prototype.hoverOver = function (x, y) {
         // Deselect any old selected note(s)
         this.hasSelection = true;
         this.selectionX = Math.floor(x / C.NoteWidth);
         this.selectionY = Math.floor(y / C.NoteHeight);
     };
-    GridModel.prototype.deselect = function () {
+    GridModel.prototype.unhover = function () {
         this.hasSelection = false;
     };
     __decorate([
@@ -327,12 +326,12 @@ var PianoRollView = (function (_super) {
     PianoRollView.prototype.mouseMove = function (x, y) {
         for (var _i = 0, _a = this.selectableThings; _i < _a.length; _i++) {
             var thing = _a[_i];
-            if (thing.hasSomethingToSelectAt(x, y)) {
+            if (thing.hasSomethingToHoverOverAt(x, y)) {
                 // Select the new thing.
-                thing.selectAt(x, y);
+                thing.hoverOver(x, y);
                 // Deselect the previous thing, if there was one.
                 if (this.currentlySelectedThing && this.currentlySelectedThing != thing) {
-                    this.currentlySelectedThing.deselect();
+                    this.currentlySelectedThing.unhover();
                 }
                 this.currentlySelectedThing = thing;
                 break;
