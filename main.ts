@@ -3,12 +3,18 @@
 // TODO
 // * Separate out grid from MainView
 // * and make that selectable, too.
+// * Some sort of Math.flooring x/y normalizer
 // * Separate out note description sidebar and make that selectable, maybe?
 // * Start moving stuff into different files.
 
 class C {
   public static NoteWidth = 40;
   public static NoteHeight = 15;
+}
+
+class Depths {
+  public static GridDepth = 0;
+  public static NoteDepth = 10;
 }
 
 class NoteUIState extends Base {
@@ -69,17 +75,13 @@ interface ISelectableThing {
 
   selectAt(x: number, y: number): void;
 
+  // TODO: Implement this more generally.
   deselect(): void;
 
   /**
     How high the selectable thing is in the hierarchy. Bigger numbers are on top of smaller numbers.
   */
-  depth(): number;
-
-  /**
-    Register this as a selectable thing. Necessary if you want it to actually be selected...
-  */
-  register(): void;
+  depth: number;
 }
 
 class PianoRollModel extends Base {
@@ -88,9 +90,6 @@ class PianoRollModel extends Base {
 }
 
 class NoteViewModel extends Base implements ISelectableThing {
-  @prop noteWidth = C.NoteWidth;
-  @prop noteHeight = C.NoteHeight;
-
   @prop notes: NoteModel[] = [];
 
   get selectedNotes(): NoteModel[] {
@@ -102,8 +101,8 @@ class NoteViewModel extends Base implements ISelectableThing {
     if there isn't one.
   */
   private getNoteAt(x: number, y: number): Maybe<NoteModel> {
-    var normalizedX = Math.floor(x / this.noteWidth);
-    var normalizedY = Math.floor(y / this.noteHeight);
+    var normalizedX = Math.floor(x / C.NoteWidth);
+    var normalizedY = Math.floor(y / C.NoteHeight);
 
     for (var note of this.notes) {
       if (normalizedX >= note.x && normalizedX < note.x + note.length && note.y == normalizedY) {
@@ -144,21 +143,7 @@ class NoteViewModel extends Base implements ISelectableThing {
     console.warn("Stub");
   }
 
-  /**
-    How high the selectable thing is in the hierarchy. Bigger numbers are on top of smaller numbers.
-  */
-  depth(): number {
-    return 0;
-  }
-
-  // NOTE this is the wrong abstraction.
-
-  /**
-    Register this as a selectable thing. Necessary if you want it to actually be selected...
-  */
-  register(): void {
-    console.warn("stub");
-  }
+  depth = Depths.NoteDepth;
 }
 
 class NoteView extends Base implements IDrawableThing {
@@ -199,7 +184,7 @@ class NoteView extends Base implements IDrawableThing {
         context.fillStyle = "rgb(255, 0, 0)";
       }
 
-      context.fillRect(model.noteWidth * note.x, model.noteHeight * note.y, model.noteWidth * note.length, model.noteHeight);
+      context.fillRect(C.NoteWidth * note.x, C.NoteHeight * note.y, C.NoteWidth * note.length, C.NoteHeight);
     }
   }
 }
@@ -207,10 +192,39 @@ class NoteView extends Base implements IDrawableThing {
 class GridModel extends Base {
   @prop widthInNotes = 40;
   @prop heightInNotes = 20;
+
+  // Selection related properties
+
+  @prop hasSelection = false;
+  @prop selectionX = -1;
+  @prop selectionY = -1;
+
+  //
+  // ISelectableThing
+  //
+
+  hasSomethingToSelectAt(x: number, y: number): boolean {
+    return true;
+  }
+
+  selectAt(x: number, y: number): void {
+    // Deselect any old selected note(s)
+
+    this.hasSelection = true;
+
+    this.selectionX = Math.floor(x / C.NoteWidth);
+    this.selectionY = Math.floor(y / C.NoteHeight);
+  }
+
+  deselect(): void {
+    console.warn("Stub");
+  }
+
+  depth = Depths.GridDepth;
 }
 
 class GridView extends Base implements IDrawableThing {
-  private model = new GridModel();
+  public model = new GridModel();
 
   //
   // IDrawableThing
@@ -225,6 +239,11 @@ class GridView extends Base implements IDrawableThing {
       for (var j = 0; j < model.heightInNotes; j++) {
         context.strokeRect(i * C.NoteWidth, j * C.NoteHeight, C.NoteWidth, C.NoteHeight);
       }
+    }
+
+    if (this.model.hasSelection) {
+      context.fillStyle = "rgb(200, 200, 200)";
+      context.fillRect(C.NoteWidth * this.model.selectionX, C.NoteHeight * this.model.selectionY, C.NoteWidth, C.NoteHeight);
     }
   }
 }
@@ -247,7 +266,7 @@ class PianoRollView extends Base {
     var gridView = new GridView();
     var noteView = new NoteView();
 
-    this.selectableThings = [noteView.model];
+    this.selectableThings = [noteView.model, gridView.model];
     this.drawableThings = [noteView, gridView];
 
     this.model = new PianoRollModel();

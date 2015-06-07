@@ -19,6 +19,7 @@ if (typeof __metadata !== "function") __metadata = function (k, v) {
 // TODO
 // * Separate out grid from MainView
 // * and make that selectable, too.
+// * Some sort of Math.flooring x/y normalizer
 // * Separate out note description sidebar and make that selectable, maybe?
 // * Start moving stuff into different files.
 var C = (function () {
@@ -27,6 +28,13 @@ var C = (function () {
     C.NoteWidth = 40;
     C.NoteHeight = 15;
     return C;
+})();
+var Depths = (function () {
+    function Depths() {
+    }
+    Depths.GridDepth = 0;
+    Depths.NoteDepth = 10;
+    return Depths;
 })();
 var NoteUIState = (function (_super) {
     __extends(NoteUIState, _super);
@@ -125,9 +133,8 @@ var NoteViewModel = (function (_super) {
     __extends(NoteViewModel, _super);
     function NoteViewModel() {
         _super.apply(this, arguments);
-        this.noteWidth = C.NoteWidth;
-        this.noteHeight = C.NoteHeight;
         this.notes = [];
+        this.depth = Depths.NoteDepth;
     }
     Object.defineProperty(NoteViewModel.prototype, "selectedNotes", {
         get: function () {
@@ -141,8 +148,8 @@ var NoteViewModel = (function (_super) {
       if there isn't one.
     */
     NoteViewModel.prototype.getNoteAt = function (x, y) {
-        var normalizedX = Math.floor(x / this.noteWidth);
-        var normalizedY = Math.floor(y / this.noteHeight);
+        var normalizedX = Math.floor(x / C.NoteWidth);
+        var normalizedY = Math.floor(y / C.NoteHeight);
         for (var _i = 0, _a = this.notes; _i < _a.length; _i++) {
             var note = _a[_i];
             if (normalizedX >= note.x && normalizedX < note.x + note.length && note.y == normalizedY) {
@@ -173,27 +180,6 @@ var NoteViewModel = (function (_super) {
     NoteViewModel.prototype.deselect = function () {
         console.warn("Stub");
     };
-    /**
-      How high the selectable thing is in the hierarchy. Bigger numbers are on top of smaller numbers.
-    */
-    NoteViewModel.prototype.depth = function () {
-        return 0;
-    };
-    // NOTE this is the wrong abstraction.
-    /**
-      Register this as a selectable thing. Necessary if you want it to actually be selected...
-    */
-    NoteViewModel.prototype.register = function () {
-        console.warn("stub");
-    };
-    __decorate([
-        prop, 
-        __metadata('design:type', Object)
-    ], NoteViewModel.prototype, "noteWidth");
-    __decorate([
-        prop, 
-        __metadata('design:type', Object)
-    ], NoteViewModel.prototype, "noteHeight");
     __decorate([
         prop, 
         __metadata('design:type', Array)
@@ -232,7 +218,7 @@ var NoteView = (function (_super) {
             else {
                 context.fillStyle = "rgb(255, 0, 0)";
             }
-            context.fillRect(model.noteWidth * note.x, model.noteHeight * note.y, model.noteWidth * note.length, model.noteHeight);
+            context.fillRect(C.NoteWidth * note.x, C.NoteHeight * note.y, C.NoteWidth * note.length, C.NoteHeight);
         }
     };
     return NoteView;
@@ -243,7 +229,27 @@ var GridModel = (function (_super) {
         _super.apply(this, arguments);
         this.widthInNotes = 40;
         this.heightInNotes = 20;
+        // Selection related properties
+        this.hasSelection = false;
+        this.selectionX = -1;
+        this.selectionY = -1;
+        this.depth = Depths.GridDepth;
     }
+    //
+    // ISelectableThing
+    //
+    GridModel.prototype.hasSomethingToSelectAt = function (x, y) {
+        return true;
+    };
+    GridModel.prototype.selectAt = function (x, y) {
+        // Deselect any old selected note(s)
+        this.hasSelection = true;
+        this.selectionX = Math.floor(x / C.NoteWidth);
+        this.selectionY = Math.floor(y / C.NoteHeight);
+    };
+    GridModel.prototype.deselect = function () {
+        console.warn("Stub");
+    };
     __decorate([
         prop, 
         __metadata('design:type', Object)
@@ -252,6 +258,18 @@ var GridModel = (function (_super) {
         prop, 
         __metadata('design:type', Object)
     ], GridModel.prototype, "heightInNotes");
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], GridModel.prototype, "hasSelection");
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], GridModel.prototype, "selectionX");
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], GridModel.prototype, "selectionY");
     return GridModel;
 })(Base);
 var GridView = (function (_super) {
@@ -271,6 +289,10 @@ var GridView = (function (_super) {
                 context.strokeRect(i * C.NoteWidth, j * C.NoteHeight, C.NoteWidth, C.NoteHeight);
             }
         }
+        if (this.model.hasSelection) {
+            context.fillStyle = "rgb(200, 200, 200)";
+            context.fillRect(C.NoteWidth * this.model.selectionX, C.NoteHeight * this.model.selectionY, C.NoteWidth, C.NoteHeight);
+        }
     };
     return GridView;
 })(Base);
@@ -282,7 +304,7 @@ var PianoRollView = (function (_super) {
         _super.call(this);
         var gridView = new GridView();
         var noteView = new NoteView();
-        this.selectableThings = [noteView.model];
+        this.selectableThings = [noteView.model, gridView.model];
         this.drawableThings = [noteView, gridView];
         this.model = new PianoRollModel();
         this.canvas = document.getElementById("main");
