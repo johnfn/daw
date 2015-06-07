@@ -269,7 +269,7 @@ var GridModel = (function (_super) {
         this.depth = Depths.GridDepth;
     }
     //
-    // ISelectableThing
+    // IHoverable
     //
     GridModel.prototype.hasSomethingToHoverOverAt = function (x, y) {
         return true;
@@ -296,6 +296,16 @@ var GridModel = (function (_super) {
     };
     GridModel.prototype.removeFocus = function () {
         this.hasClick = false;
+    };
+    //
+    // IDraggable
+    //
+    GridModel.prototype.startDrag = function (x, y) {
+    };
+    GridModel.prototype.continueDrag = function (x, y) {
+        console.log("Drag " + x + " " + y);
+    };
+    GridModel.prototype.endDrag = function (x, y) {
     };
     __decorate([
         prop, 
@@ -359,17 +369,29 @@ var GridView = (function (_super) {
     };
     return GridView;
 })(Base);
-// TODO
-// * I should generalize ISelectableThing to IMouseableThing and add both click and select actions?
+var MouseModel = (function (_super) {
+    __extends(MouseModel, _super);
+    function MouseModel() {
+        _super.apply(this, arguments);
+        this.down = false;
+    }
+    __decorate([
+        prop, 
+        __metadata('design:type', Object)
+    ], MouseModel.prototype, "down");
+    return MouseModel;
+})(Base);
 var PianoRollView = (function (_super) {
     __extends(PianoRollView, _super);
     function PianoRollView() {
         _super.call(this);
+        this.mouse = new MouseModel();
         var gridView = new GridView();
         var noteView = new NoteView();
         this.hoverableThings = [noteView.model, gridView.model];
         this.drawableThings = [noteView, gridView];
         this.clickableThings = [noteView.model, gridView.model];
+        this.draggableThings = [gridView.model];
         this.model = new PianoRollModel();
         this.canvas = document.getElementById("main");
         this.context = this.canvas.getContext('2d');
@@ -387,8 +409,13 @@ var PianoRollView = (function (_super) {
         this.canvas.addEventListener("mousedown", function (ev) {
             _this.mouseDown(ev.offsetX, ev.offsetY);
         });
+        this.canvas.addEventListener("mouseup", function (ev) {
+            _this.mouseUp(ev.offsetX, ev.offsetY);
+        });
     };
     PianoRollView.prototype.mouseDown = function (x, y) {
+        this.mouse.down = true;
+        // Send click events
         for (var _i = 0, _a = this.clickableThings; _i < _a.length; _i++) {
             var thing = _a[_i];
             if (thing.hasSomethingToClickAt(x, y)) {
@@ -400,8 +427,21 @@ var PianoRollView = (function (_super) {
                 break;
             }
         }
+        // Send drag events
+        for (var _b = 0, _c = this.draggableThings; _b < _c.length; _b++) {
+            var dragThing = _c[_b];
+            dragThing.startDrag(x, y);
+        }
     };
     PianoRollView.prototype.mouseMove = function (x, y) {
+        if (this.mouse.down) {
+            this.sendDragEvents(x, y);
+        }
+        else {
+            this.sendHoverEvents(x, y);
+        }
+    };
+    PianoRollView.prototype.sendHoverEvents = function (x, y) {
         for (var _i = 0, _a = this.hoverableThings; _i < _a.length; _i++) {
             var thing = _a[_i];
             if (thing.hasSomethingToHoverOverAt(x, y)) {
@@ -414,6 +454,20 @@ var PianoRollView = (function (_super) {
                 this.currentlyHoveredThing = thing;
                 break;
             }
+        }
+    };
+    PianoRollView.prototype.sendDragEvents = function (x, y) {
+        for (var _i = 0, _a = this.draggableThings; _i < _a.length; _i++) {
+            var thing = _a[_i];
+            thing.continueDrag(x, y);
+        }
+    };
+    PianoRollView.prototype.mouseUp = function (x, y) {
+        this.mouse.down = false;
+        // Send drag events
+        for (var _i = 0, _a = this.draggableThings; _i < _a.length; _i++) {
+            var dragThing = _a[_i];
+            dragThing.endDrag(x, y);
         }
     };
     // TODO: Once I separate out the grid class, instead of using C.NoteBleh, put that onto the grid model

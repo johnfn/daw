@@ -65,6 +65,14 @@ interface IRenderable {
   render(context: CanvasRenderingContext2D): void;
 }
 
+interface IDraggable {
+  startDrag(x: number, y: number): void;
+
+  continueDrag(x: number, y: number): void;
+
+  endDrag(x: number, y: number): void;
+}
+
 interface IHoverable {
   /**
     x and y are pixel values that have not been normalized (except such that (0, 0) is the top left of the canvas)
@@ -226,7 +234,7 @@ class NoteView extends Base implements IRenderable {
   }
 }
 
-class GridModel extends Base implements IHoverable, IClickable {
+class GridModel extends Base implements IHoverable, IClickable, IDraggable {
   @prop widthInNotes = 40;
   @prop heightInNotes = 20;
 
@@ -241,7 +249,7 @@ class GridModel extends Base implements IHoverable, IClickable {
   @prop clickY = -1;
 
   //
-  // ISelectableThing
+  // IHoverable
   //
 
   hasSomethingToHoverOverAt(x: number, y: number): boolean {
@@ -281,6 +289,22 @@ class GridModel extends Base implements IHoverable, IClickable {
   removeFocus(): void {
     this.hasClick = false;
   }
+
+  //
+  // IDraggable
+  //
+
+  startDrag(x: number, y: number): void {
+
+  }
+
+  continueDrag(x: number, y: number): void {
+    console.log(`Drag ${x} ${y}`);
+  }
+
+  endDrag(x: number, y: number): void {
+
+  }
 }
 
 class GridView extends Base implements IRenderable {
@@ -313,8 +337,9 @@ class GridView extends Base implements IRenderable {
   }
 }
 
-// TODO
-// * I should generalize ISelectableThing to IMouseableThing and add both click and select actions?
+class MouseModel extends Base {
+  @prop down = false;
+}
 
 class PianoRollView extends Base {
   private canvas: HTMLCanvasElement;
@@ -322,15 +347,20 @@ class PianoRollView extends Base {
 
   private model: PianoRollModel;
 
+  private mouse: MouseModel;
+
   private currentlyHoveredThing: IHoverable;
   private currentlyClickedThing: IClickable;
 
   private hoverableThings: IHoverable[];
   private drawableThings: IRenderable[];
   private clickableThings: IClickable[];
+  private draggableThings: IDraggable[];
 
   constructor() {
     super();
+
+    this.mouse = new MouseModel();
 
     var gridView = new GridView();
     var noteView = new NoteView();
@@ -338,6 +368,7 @@ class PianoRollView extends Base {
     this.hoverableThings = [noteView.model, gridView.model];
     this.drawableThings = [noteView, gridView];
     this.clickableThings = [noteView.model, gridView.model];
+    this.draggableThings = [gridView.model];
 
     this.model = new PianoRollModel();
 
@@ -361,10 +392,18 @@ class PianoRollView extends Base {
 
     this.canvas.addEventListener("mousedown", (ev: MouseEvent) => {
       this.mouseDown(ev.offsetX, ev.offsetY);
-    })
+    });
+
+    this.canvas.addEventListener("mouseup", (ev: MouseEvent) => {
+      this.mouseUp(ev.offsetX, ev.offsetY);
+    });
   }
 
   private mouseDown(x: number, y: number): void {
+    this.mouse.down = true;
+
+    // Send click events
+
     for (var thing of this.clickableThings) {
       if (thing.hasSomethingToClickAt(x, y)) {
         if (this.currentlyClickedThing) {
@@ -378,9 +417,23 @@ class PianoRollView extends Base {
         break;
       }
     }
+
+    // Send drag events
+
+    for (var dragThing of this.draggableThings) {
+      dragThing.startDrag(x, y);
+    }
   }
 
   private mouseMove(x: number, y: number) {
+    if (this.mouse.down) {
+      this.sendDragEvents(x, y);
+    } else {
+      this.sendHoverEvents(x, y);
+    }
+  }
+
+  private sendHoverEvents(x: number, y: number): void {
     for (var thing of this.hoverableThings) {
      if (thing.hasSomethingToHoverOverAt(x, y)) {
         // Deselect the previous thing, if there was one.
@@ -397,6 +450,22 @@ class PianoRollView extends Base {
 
         break;
       }
+    }
+  }
+
+  private sendDragEvents(x: number, y: number): void {
+    for (var thing of this.draggableThings) {
+      thing.continueDrag(x, y);
+    }
+  }
+
+  private mouseUp(x: number, y: number): void {
+    this.mouse.down = false;
+
+    // Send drag events
+
+    for (var dragThing of this.draggableThings) {
+      dragThing.endDrag(x, y);
     }
   }
 
